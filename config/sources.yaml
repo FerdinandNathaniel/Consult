@@ -12,24 +12,27 @@ rss_feeds:
     category: "national_news"
     language: "nl"
 
-  - name: "Het Financieele Dagblad"
-    url: "https://fd.nl/rss.xml"
-    category: "national_news"
-    language: "nl"
+  # FD requires a subscription for RSS access — no public feed available.
+  # - name: "Het Financieele Dagblad"
+  #   url: "https://fd.nl/rss.xml"
+  #   category: "national_news"
+  #   language: "nl"
 
-  - name: "De Nederlandsche Bank - Nieuws"
-    url: "https://www.dnb.nl/rss/nieuws.xml"
-    category: "official_nl"
-    language: "nl"
+  # DNB moved/restricted their RSS feed — no working public URL found.
+  # - name: "De Nederlandsche Bank - Nieuws"
+  #   url: "https://www.dnb.nl/rss/nieuws.xml"
+  #   category: "official_nl"
+  #   language: "nl"
 
   # --- EU / European ---
-  - name: "Politico EU - AI & Tech"
-    url: "https://rss.politico.eu/tech.xml"
-    category: "eu_policy"
-    language: "en"
+  # Politico EU RSS domain (rss.politico.eu) no longer resolves.
+  # - name: "Politico EU - AI & Tech"
+  #   url: "https://rss.politico.eu/tech.xml"
+  #   category: "eu_policy"
+  #   language: "en"
 
-  - name: "European Commission - Digital"
-    url: "https://ec.europa.eu/newsroom/dae/items/rss.xml"
+  - name: "European Commission - Digital Strategy"
+    url: "https://digital-strategy.ec.europa.eu/en/rss.xml"
     category: "official_eu"
     language: "en"
 
@@ -39,10 +42,11 @@ rss_feeds:
     language: "en"
 
   # --- International AI / Research ---
-  - name: "OECD AI Policy Observatory"
-    url: "https://oecd.ai/en/feed"
-    category: "ai_policy"
-    language: "en"
+  # OECD AI Observatory feed is blocked/restricted — no working public URL found.
+  # - name: "OECD AI Policy Observatory"
+  #   url: "https://oecd.ai/en/feed"
+  #   category: "ai_policy"
+  #   language: "en"
 
   - name: "MIT Technology Review"
     url: "https://www.technologyreview.com/feed/"
@@ -86,7 +90,10 @@ rss_feeds:
 # =============================================================================
 
 social:
-  rsshub_instance: "https://rsshub.app"  # Change to self-hosted instance if needed
+  # rsshub.app no longer serves Twitter/X feeds (redirects to google.com/404).
+  # To re-enable social fetching, self-host RSSHub: https://docs.rsshub.app/deploy/
+  # Then replace the URL below with your instance (e.g. https://rsshub.yourdomain.com).
+  rsshub_instance: "https://rsshub.app"
 
   twitter_accounts:
     - handle: "alexstubb"

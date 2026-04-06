@@ -86,11 +86,14 @@ def main(dry_run: bool = False) -> None:
     logger.info(f"Briefing written to {output_path}")
 
     # --- Upload to Drive ---
-    if not dry_run:
-        from .drive import upload_to_drive
-        url = upload_to_drive(output_path, filename)
-        if url:
-            logger.info(f"Available in Drive: {url}")
+    # Disabled: service accounts lack personal Drive quota.
+    # Output is stored locally and uploaded as a GitHub Actions artifact.
+    # Re-enable once a Shared Drive is available (requires supportsAllDrives=True in drive.py).
+    # if not dry_run:
+    #     from .drive import upload_to_drive
+    #     url = upload_to_drive(output_path, filename)
+    #     if url:
+    #         logger.info(f"Available in Drive: {url}")
 
     # Print path for CI visibility
     print(str(output_path))

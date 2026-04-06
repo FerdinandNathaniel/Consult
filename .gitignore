@@ -1,0 +1,6 @@
+.env
+config/google_service_account.json
+outputs/
+__pycache__/
+*.pyc
+.python-version

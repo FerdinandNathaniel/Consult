@@ -1,0 +1,138 @@
+# =============================================================================
+# SOURCE CONFIGURATION
+# Add/remove sources freely — each run picks up whatever is listed here.
+# Categories are free-form labels used for context in the briefing.
+# =============================================================================
+
+rss_feeds:
+
+  # --- Dutch / National ---
+  - name: "NOS Nieuws - Tech"
+    url: "https://feeds.nos.nl/nosnieuwstech"
+    category: "national_news"
+    language: "nl"
+
+  - name: "Het Financieele Dagblad"
+    url: "https://fd.nl/rss.xml"
+    category: "national_news"
+    language: "nl"
+
+  - name: "De Nederlandsche Bank - Nieuws"
+    url: "https://www.dnb.nl/rss/nieuws.xml"
+    category: "official_nl"
+    language: "nl"
+
+  # --- EU / European ---
+  - name: "Politico EU - AI & Tech"
+    url: "https://rss.politico.eu/tech.xml"
+    category: "eu_policy"
+    language: "en"
+
+  - name: "European Commission - Digital"
+    url: "https://ec.europa.eu/newsroom/dae/items/rss.xml"
+    category: "official_eu"
+    language: "en"
+
+  - name: "European Parliament - News"
+    url: "https://www.europarl.europa.eu/rss/doc/top-stories/en.xml"
+    category: "official_eu"
+    language: "en"
+
+  # --- International AI / Research ---
+  - name: "OECD AI Policy Observatory"
+    url: "https://oecd.ai/en/feed"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "MIT Technology Review"
+    url: "https://www.technologyreview.com/feed/"
+    category: "ai_research"
+    language: "en"
+
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/category/ai/feed/"
+    category: "ai_industry"
+    language: "en"
+
+  - name: "TechCrunch AI"
+    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+    category: "ai_industry"
+    language: "en"
+
+  # --- Newsletters with web/RSS versions ---
+  - name: "The Batch (DeepLearning.AI)"
+    url: "https://www.deeplearning.ai/the-batch/feed.xml"
+    category: "ai_newsletter"
+    language: "en"
+
+  - name: "Import AI (Jack Clark)"
+    url: "https://importai.substack.com/feed"
+    category: "ai_newsletter"
+    language: "en"
+
+  - name: "The Decoder"
+    url: "https://the-decoder.com/feed/"
+    category: "ai_newsletter"
+    language: "en"
+
+# =============================================================================
+# SOCIAL MEDIA ACCOUNTS
+# Twitter/X accounts are fetched via RSSHub (free, no API key needed).
+# RSSHub instance used: rsshub.app — swap to a self-hosted instance for reliability.
+# LinkedIn is not supported (no viable free API).
+#
+# To add an account: add a block with handle, name, and a short relevance_hint.
+# To remove: delete or comment out the block.
+# =============================================================================
+
+social:
+  rsshub_instance: "https://rsshub.app"  # Change to self-hosted instance if needed
+
+  twitter_accounts:
+    - handle: "alexstubb"
+      name: "Alexander Stubb"
+      relevance_hint: "EU leadership, AI governance, digital policy"
+
+    - handle: "ylecun"
+      name: "Yann LeCun"
+      relevance_hint: "AI research, Meta, technical AI debates"
+
+    - handle: "AndrewYNg"
+      name: "Andrew Ng"
+      relevance_hint: "AI industry, education, startup ecosystem"
+
+    - handle: "GaryMarcus"
+      name: "Gary Marcus"
+      relevance_hint: "AI critique, policy, safety"
+
+    - handle: "demishassabis"
+      name: "Demis Hassabis"
+      relevance_hint: "AI research, DeepMind/Google"
+
+    - handle: "sama"
+      name: "Sam Altman"
+      relevance_hint: "AI industry, OpenAI, regulation views"
+
+# =============================================================================
+# OFFICIAL PUBLICATIONS & DATA SOURCES
+# These are checked for new documents/reports (web scraping, not RSS).
+# =============================================================================
+
+web_sources:
+  - name: "CBS Statline - AI / Digitalisering"
+    url: "https://www.cbs.nl/nl-nl/zoeken/?q=kunstmatige+intelligentie"
+    category: "official_nl_data"
+    language: "nl"
+    type: "search_page"
+
+  - name: "Rijksoverheid - AI beleid"
+    url: "https://www.rijksoverheid.nl/onderwerpen/digitalisering/artifici%C3%ABle-intelligentie-ai"
+    category: "official_nl"
+    language: "nl"
+    type: "topic_page"
+
+  - name: "AIAct.eu - Updates"
+    url: "https://artificialintelligenceact.eu/feed/"
+    category: "eu_policy"
+    language: "en"
+    type: "rss"

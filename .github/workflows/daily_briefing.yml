@@ -1,0 +1,47 @@
+name: Daily Briefing
+
+on:
+  schedule:
+    # 04:00 UTC = 05:00 CET (winter) / 06:00 CEST (summer)
+    # Adjust to 03:00 UTC in summer if you want it reliably before 05:00 local:
+    - cron: '0 4 * * *'
+  workflow_dispatch:  # Allows manual trigger from the GitHub Actions tab
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt google-api-python-client google-auth
+
+      - name: Run briefing
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet' }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          OUTPUT_DIR: outputs
+        run: python -m src.briefing.run
+
+      - name: Write Google service account credentials
+        # Only runs if the secret is set
+        if: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON != '' }}
+        run: |
+          mkdir -p config
+          echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > config/google_service_account.json
+
+      - name: Upload briefing as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: briefing-${{ github.run_id }}
+          path: outputs/briefing_*.md
+          retention-days: 30

@@ -20,19 +20,13 @@ A record of key architectural and tooling choices made during development, and t
 
 ---
 
-## 3. Model choice: Claude 3.5 Sonnet via OpenRouter
+## 3. Model choice: Claude Sonnet via OpenRouter
 
-**Decision:** Use Claude 3.5 Sonnet as the default model, accessed through OpenRouter rather than directly through the Anthropic API.
+**Decision:** Use `anthropic/claude-sonnet-4.6` as the default model, accessed through OpenRouter rather than directly through the Anthropic API.
 
-**Why Claude 3.5 Sonnet:**
-- Strong instruction-following for structured JSON output (critical for reliable scoring)
-- Analytical prose quality suitable for executive summaries addressed to a central bank analyst
-- Cost-effective at ~$3/M tokens, keeping daily costs well within budget
+**Why Claude Sonnet:** Strong instruction-following for structured JSON output, analytical prose quality suitable for central bank briefings, cost-effective at ~$3/M tokens.
 
-**Why OpenRouter:**
-- Single API key covers many model providers
-- Easy to swap models (e.g. to a cheaper model for testing, or a more capable one for future tasks) via the `OPENROUTER_MODEL` environment variable — no code changes needed
-- No direct contract or billing relationship with Anthropic required
+**Why OpenRouter:** Single API key, easy model switching via the `OPENROUTER_MODEL` env var without code changes, no direct Anthropic contract required.
 
 ---
 
@@ -58,11 +52,11 @@ Merging them into one call would require either compromising the JSON format or 
 
 ## 6. RSSHub for Twitter/X social monitoring
 
-**Decision:** Twitter/X accounts are monitored by converting them to RSS feeds via a public RSSHub instance. LinkedIn is not supported.
+**Decision:** Twitter/X accounts are monitored via RSSHub. LinkedIn is not supported.
 
-**Why RSSHub:** It is free, requires no API keys, and integrates cleanly with the existing RSS fetcher. The public instance (`rsshub.app`) is sufficient for this volume; self-hosting is documented as an option if rate limits become an issue.
+**Why RSSHub:** Free, no API keys, integrates with the existing RSS fetcher. Note: the public instance (`rsshub.app`) no longer serves Twitter feeds as of 2026 — self-hosting RSSHub is required to re-enable social fetching.
 
-**Why no LinkedIn:** No viable free or low-cost API exists for LinkedIn feed access. The decision was made to skip it rather than introduce a paid dependency or brittle scraping.
+**Why no LinkedIn:** No viable free or low-cost API exists.
 
 ---
 
@@ -74,11 +68,13 @@ Merging them into one call would require either compromising the JSON format or 
 
 ---
 
-## 8. Google Drive delivery via service account
+## 8. Google Drive delivery — temporarily disabled
 
-**Decision:** The briefing is uploaded to Google Drive using a service account (JSON key file), not OAuth.
+**Decision:** Drive upload is currently disabled. Output is delivered via GitHub Actions artifacts. The service account auth approach (no OAuth) is still the right call for automation.
 
-**Why:** OAuth requires a user to authorize the app and manage token refresh. A service account is fully automated — once the service account email is given Editor access to the target folder, uploads work indefinitely without any user interaction. This is appropriate for an unattended nightly job.
+**Why disabled:** Service accounts have no personal Drive storage quota — uploading to a regular "My Drive" folder returns `storageQuotaExceeded`. Reading from Drive with the service account works without issue.
+
+**To re-enable:** Create a Shared Drive (requires Google Workspace), add the service account as a member, and add `supportsAllDrives=True` to the `files().create()` call in `drive.py`.
 
 ---
 

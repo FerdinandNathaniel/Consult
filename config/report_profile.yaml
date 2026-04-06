@@ -1,0 +1,60 @@
+# =============================================================================
+# REPORT PROFILE — edit this for each new report Stefan works on.
+# This profile is fed to the LLM to calibrate what counts as "relevant."
+# =============================================================================
+
+report:
+  title: "AI-beleid en het startup- en investeringsklimaat in Nederland"
+  title_en: "AI Policy and the Startup and Investment Climate in the Netherlands"
+  author: "Stefan"
+  perspective: "De Nederlandsche Bank (DNB)"
+  status: "in_progress"
+
+# What this report is fundamentally about — used as the primary relevance lens.
+core_focus: >
+  This report examines the intersection of national AI policy and the Dutch startup
+  and investment ecosystem, written from the perspective of the Dutch central bank (DNB).
+  It covers how AI regulation, public investment, and government strategy shape the
+  conditions for AI startups and venture capital in the Netherlands, and how the
+  Netherlands compares to peer countries (Germany, France, UK) and EU-level initiatives.
+
+# Key themes — the LLM uses these to tier incoming articles.
+themes:
+  - AI startups and scale-ups in the Netherlands
+  - Venture capital and private investment in Dutch AI
+  - Dutch national AI strategy and government programs
+  - DNB perspective on AI: financial stability, supervision, innovation
+  - EU AI Act implementation and its impact on Dutch firms
+  - Comparison with Germany, France, UK AI ecosystems
+  - Public funding mechanisms (invest-NL, RVO, Horizon Europe)
+  - AI talent and skills policy (universities, immigration)
+  - AI and productivity / economic impact
+
+# Key organisations and stakeholders to watch.
+key_actors:
+  - De Nederlandsche Bank (DNB)
+  - Ministerie van Economische Zaken
+  - Ministerie van Digitalisering
+  - European Commission (DG CNECT, DG GROW)
+  - InvestNL
+  - StartupDelta / Dutch Startup Association
+  - CBS (Centraal Bureau voor de Statistiek)
+  - OECD
+
+# Relevance tier definitions — used verbatim in the LLM prompt.
+relevance_tiers:
+  tier_1:
+    label: "Perfectly relevant"
+    description: >
+      Directly addresses Dutch AI policy, Dutch startup/VC ecosystem, DNB's role,
+      or EU AI regulation with clear Dutch implications. Stefan should read this today.
+  tier_2:
+    label: "Relevant"
+    description: >
+      Covers AI policy, startup ecosystems, or AI investment in comparable countries
+      or at EU level. Useful for framing, comparisons, or background. Worth a look.
+  tier_3:
+    label: "Potentially relevant"
+    description: >
+      General AI industry news, technical developments, or international trends that
+      may become relevant later or provide useful context. Skim or skip.

@@ -4,11 +4,18 @@ Daily briefing — main entry point.
 Usage:
     python -m src.briefing.run              # normal run
     python -m src.briefing.run --dry-run    # fetch and format, skip LLM scoring and Drive upload
+
+Environment variables:
+    SERENDIPITY_N       Number of serendipity sources to sample per run (default: 3)
+    MAX_ITERATIONS      Max quality-pass iterations if Tier 1 count is low (default: 3)
+    TIER1_THRESHOLD     Minimum Tier 1 articles to consider quality sufficient (default: 3)
+    INCLUDE_TIER3       Set to 'true' to include Tier 3 (low signal) in output (default: false)
 """
 
 import argparse
 import logging
 import os
+import random
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -45,7 +52,7 @@ def main(dry_run: bool = False) -> None:
     sources = load_yaml(CONFIG_DIR / "sources.yaml")
     profile = load_yaml(CONFIG_DIR / "report_profile.yaml")
 
-    # --- Fetch ---
+    # --- Fetch core sources ---
     articles = []
     articles += fetch_rss_articles(sources.get("rss_feeds", []))
     articles += fetch_social_articles(sources.get("social", {}))
@@ -57,14 +64,65 @@ def main(dry_run: bool = False) -> None:
     if web_as_rss:
         articles += fetch_rss_articles(web_as_rss)
 
+    # --- Serendipity sampling ---
+    serendipity_pool = sources.get("serendipity_sources", [])
+    n_serendipity = int(os.environ.get("SERENDIPITY_N", 3))
+    sampled_serendipity = random.sample(serendipity_pool, min(n_serendipity, len(serendipity_pool)))
+    if sampled_serendipity:
+        logger.info(f"Serendipity sources sampled: {[s['name'] for s in sampled_serendipity]}")
+        articles += fetch_rss_articles(sampled_serendipity)
+
+    # Deduplicate by URL (keep first occurrence)
+    seen_urls: set[str] = set()
+    unique_articles = []
+    for a in articles:
+        if a.url not in seen_urls:
+            seen_urls.add(a.url)
+            unique_articles.append(a)
+    articles = unique_articles
+
     logger.info(f"Total articles fetched: {len(articles)}")
 
     if not articles:
         logger.warning("No articles fetched — briefing will be empty")
 
-    # --- Score ---
+    # --- Score + iterative quality pass ---
+    max_iterations = int(os.environ.get("MAX_ITERATIONS", 3))
+    tier1_threshold = int(os.environ.get("TIER1_THRESHOLD", 3))
+    iterations_used = 1
+
     if not dry_run:
         articles = score_articles(articles, profile)
+
+        # Quality pass: if Tier 1 is sparse, fetch more from the remaining serendipity pool
+        remaining_pool = [s for s in serendipity_pool if s not in sampled_serendipity]
+        while iterations_used < max_iterations:
+            tier1_count = sum(1 for a in articles if a.tier == 1)
+            if tier1_count >= tier1_threshold or not remaining_pool:
+                break
+
+            logger.info(
+                f"Quality pass iteration {iterations_used + 1}: "
+                f"Tier 1 count {tier1_count} < {tier1_threshold}, fetching more sources"
+            )
+            batch = remaining_pool[:5]
+            remaining_pool = remaining_pool[5:]
+            new_articles = fetch_rss_articles(batch)
+
+            # Deduplicate new articles against what we already have
+            new_articles = [a for a in new_articles if a.url not in seen_urls]
+            for a in new_articles:
+                seen_urls.add(a.url)
+
+            if new_articles:
+                new_articles = score_articles(new_articles, profile)
+                articles += new_articles
+
+            iterations_used += 1
+
+        if iterations_used > 1:
+            logger.info(f"Quality pass completed after {iterations_used} iterations")
+
         executive_summary = generate_executive_summary(articles, profile)
     else:
         logger.info("Dry run: skipping LLM scoring")
@@ -74,7 +132,14 @@ def main(dry_run: bool = False) -> None:
         executive_summary = "(dry run — no executive summary generated)"
 
     # --- Format ---
-    briefing_md = format_briefing(articles, executive_summary, profile)
+    serendipity_names = [s["name"] for s in sampled_serendipity] if sampled_serendipity else None
+    briefing_md = format_briefing(
+        articles,
+        executive_summary,
+        profile,
+        serendipity_names=serendipity_names,
+        iterations_used=iterations_used,
+    )
 
     # --- Write output ---
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

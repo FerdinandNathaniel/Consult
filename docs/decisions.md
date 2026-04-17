@@ -99,6 +99,24 @@ Merging them into one call would require either compromising the JSON format or 
 
 ---
 
+## 12. Twitter/X social monitoring: cookie-based auth, manual refresh
+
+**Decision:** Twitter/X accounts are monitored via a self-hosted RSSHub instance, authenticated with session cookies (`TWITTER_AUTH_TOKEN` + `TWITTER_CT0`). Cookie refresh is manual, done when feeds go silent.
+
+**Why not the official API:** The X API tier that permits timeline fetching costs $100+/month. That is disproportionate for a daily briefing at this scale.
+
+**Why not automate cookie refresh:** Automated login to extract cookies requires storing plaintext credentials and submitting login forms programmatically — both blocked by X's bot detection and a risk to account suspension. There is no safe, reliable way to automate this.
+
+**Expected maintenance:** Cookies last weeks to months in practice. The pipeline degrades gracefully when they expire (Twitter items are silently absent; no crash or error email). Check when the social section disappears from the briefing.
+
+**Fix when it breaks:**
+1. Open [x.com](https://x.com) logged in → DevTools → Application → Cookies → `https://x.com`
+2. Copy `auth_token` and `ct0`
+3. Railway dashboard → RSSHub service → Variables → update `TWITTER_AUTH_TOKEN` and `TWITTER_CT0`
+4. Railway redeploys automatically; next briefing run picks up Twitter again
+
+---
+
 ## 10. 25-hour lookback window
 
 **Decision:** Article fetching uses a 25-hour lookback window rather than exactly 24 hours.

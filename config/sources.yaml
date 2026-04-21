@@ -2,6 +2,13 @@
 # SOURCE CONFIGURATION
 # Add/remove sources freely — each run picks up whatever is listed here.
 # Categories are free-form labels used for context in the briefing.
+#
+# Structure:
+#   rss_feeds         — fetched every run (core signal sources)
+#   social            — Twitter/X via RSSHub (self-host required; see docs/setup.md)
+#   web_sources       — official pages checked for new documents (type=rss treated as feeds)
+#   serendipity_sources — curated pool; SERENDIPITY_N (default: 5) are randomly sampled
+#                         each run to add variety and surface less obvious sources
 # =============================================================================
 
 rss_feeds:
@@ -10,6 +17,11 @@ rss_feeds:
   - name: "NOS Nieuws - Tech"
     url: "https://feeds.nos.nl/nosnieuwstech"
     category: "national_news"
+    language: "nl"
+
+  - name: "Rathenau Instituut"
+    url: "https://www.rathenau.nl/nl/rss.xml"
+    category: "official_nl"
     language: "nl"
 
   # FD requires a subscription for RSS access — no public feed available.
@@ -24,13 +36,7 @@ rss_feeds:
   #   category: "official_nl"
   #   language: "nl"
 
-  # --- EU / European ---
-  # Politico EU RSS domain (rss.politico.eu) no longer resolves.
-  # - name: "Politico EU - AI & Tech"
-  #   url: "https://rss.politico.eu/tech.xml"
-  #   category: "eu_policy"
-  #   language: "en"
-
+  # --- EU / European policy ---
   - name: "European Commission - Digital Strategy"
     url: "https://digital-strategy.ec.europa.eu/en/rss.xml"
     category: "official_eu"
@@ -41,29 +47,61 @@ rss_feeds:
     category: "official_eu"
     language: "en"
 
-  # --- International AI / Research ---
-  # OECD AI Observatory feed is blocked/restricted — no working public URL found.
-  # - name: "OECD AI Policy Observatory"
-  #   url: "https://oecd.ai/en/feed"
-  #   category: "ai_policy"
-  #   language: "en"
+  - name: "Euractiv Technology"
+    url: "https://www.euractiv.com/sections/digital/feed/"
+    category: "eu_policy"
+    language: "en"
 
+  - name: "EU Observer"
+    url: "https://euobserver.com/rss/all"
+    category: "eu_policy"
+    language: "en"
+
+  - name: "Science|Business"
+    url: "https://sciencebusiness.net/feed"
+    category: "eu_policy"
+    language: "en"
+
+  # --- European think tanks (economics & AI policy) ---
+  - name: "Bruegel"
+    url: "https://www.bruegel.org/rss.xml"
+    category: "eu_thinktank"
+    language: "en"
+
+  # --- Central bank & financial institution research ---
+  - name: "BIS Research (Working Papers)"
+    url: "https://www.bis.org/feeds/Work_papers.xml"
+    category: "central_bank_research"
+    language: "en"
+
+  - name: "IMF Blog"
+    url: "https://www.imf.org/en/Blogs/rss"
+    category: "central_bank_research"
+    language: "en"
+
+  # --- European startup & VC ---
+  - name: "Sifted"
+    url: "https://sifted.eu/feed"
+    category: "eu_startup_vc"
+    language: "en"
+
+  - name: "Tech.eu"
+    url: "https://tech.eu/feed/"
+    category: "eu_startup_vc"
+    language: "en"
+
+  # --- International AI research & analysis ---
   - name: "MIT Technology Review"
     url: "https://www.technologyreview.com/feed/"
     category: "ai_research"
     language: "en"
 
-  - name: "VentureBeat AI"
-    url: "https://venturebeat.com/category/ai/feed/"
-    category: "ai_industry"
+  - name: "Stanford HAI"
+    url: "https://hai.stanford.edu/news/rss.xml"
+    category: "ai_research"
     language: "en"
 
-  - name: "TechCrunch AI"
-    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
-    category: "ai_industry"
-    language: "en"
-
-  # --- Newsletters with web/RSS versions ---
+  # --- AI newsletters (expert signal, published weekly) ---
   - name: "The Batch (DeepLearning.AI)"
     url: "https://www.deeplearning.ai/the-batch/feed.xml"
     category: "ai_newsletter"
@@ -74,35 +112,49 @@ rss_feeds:
     category: "ai_newsletter"
     language: "en"
 
-  - name: "The Decoder"
-    url: "https://the-decoder.com/feed/"
+  - name: "Exponential View (Azeem Azhar)"
+    url: "https://www.exponentialview.co/feed"
+    category: "ai_newsletter"
+    language: "en"
+
+  - name: "AI Snake Oil (Narayanan & Kapoor)"
+    url: "https://aisnakeoil.substack.com/feed"
     category: "ai_newsletter"
     language: "en"
 
 # =============================================================================
 # SOCIAL MEDIA ACCOUNTS
-# Twitter/X accounts are fetched via RSSHub (free, no API key needed).
-# RSSHub instance used: rsshub.app — swap to a self-hosted instance for reliability.
-# LinkedIn is not supported (no viable free API).
+# Twitter/X accounts are fetched via RSSHub.
 #
-# To add an account: add a block with handle, name, and a short relevance_hint.
-# To remove: delete or comment out the block.
+# IMPORTANT: rsshub.app no longer serves Twitter/X feeds.
+# Self-hosting is required — see docs/setup.md for a one-click Railway deploy.
+# Once deployed, set the RSSHUB_INSTANCE secret in GitHub Actions and update
+# rsshub_instance below (or keep it in .env for local runs).
+#
+# LinkedIn is not supported (no viable free API).
 # =============================================================================
 
 social:
-  # rsshub.app no longer serves Twitter/X feeds (redirects to google.com/404).
-  # To re-enable social fetching, self-host RSSHub: https://docs.rsshub.app/deploy/
-  # Then replace the URL below with your instance (e.g. https://rsshub.yourdomain.com).
-  rsshub_instance: "https://rsshub.app"
+  rsshub_instance: "https://rsshub.app"  # Replace with self-hosted URL to activate
 
   twitter_accounts:
+    # --- EU leadership & digital policy ---
     - handle: "alexstubb"
       name: "Alexander Stubb"
       relevance_hint: "EU leadership, AI governance, digital policy"
 
+    - handle: "Vestager"
+      name: "Margrethe Vestager"
+      relevance_hint: "EU digital/competition commissioner, AI regulation architect"
+
+    - handle: "ThierryBreton"
+      name: "Thierry Breton"
+      relevance_hint: "Former EU digital commissioner, EU AI Act, industrial policy"
+
+    # --- AI research & governance ---
     - handle: "ylecun"
       name: "Yann LeCun"
-      relevance_hint: "AI research, Meta, technical AI debates"
+      relevance_hint: "AI research, Meta, open-source AI debates"
 
     - handle: "AndrewYNg"
       name: "Andrew Ng"
@@ -119,6 +171,24 @@ social:
     - handle: "sama"
       name: "Sam Altman"
       relevance_hint: "AI industry, OpenAI, regulation views"
+
+    - handle: "BenediktEvans"
+      name: "Benedict Evans"
+      relevance_hint: "Tech industry analysis, AI impact on business models"
+
+    # --- Economics & finance ---
+    - handle: "Schuldensuehner"
+      name: "Holger Zschaepitz"
+      relevance_hint: "European financial markets, macro economics"
+
+    - handle: "Isabel_Schnabel"
+      name: "Isabel Schnabel"
+      relevance_hint: "ECB Executive Board, monetary policy, digital finance"
+
+    # --- Dutch ecosystem ---
+    - handle: "nlaic"
+      name: "NL AI Coalition"
+      relevance_hint: "Dutch AI ecosystem, policy, public-private collaboration"
 
 # =============================================================================
 # OFFICIAL PUBLICATIONS & DATA SOURCES
@@ -143,3 +213,90 @@ web_sources:
     category: "eu_policy"
     language: "en"
     type: "rss"
+
+# =============================================================================
+# SERENDIPITY SOURCES
+# A curated pool of credible but lower-frequency sources.
+# SERENDIPITY_N (default: 5) are randomly sampled each run, giving the briefing
+# variety and a chance to surface institutional reports or analysis that wouldn't
+# appear in the core feeds. Quality over quantity — only add sources that Stefan
+# would trust if they surfaced a Tier 1 item.
+# =============================================================================
+
+serendipity_sources:
+
+  # --- AI industry (quality signal, higher noise than core) ---
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/category/ai/feed/"
+    category: "ai_industry"
+    language: "en"
+
+  - name: "The Decoder"
+    url: "https://the-decoder.com/feed/"
+    category: "ai_industry"
+    language: "en"
+
+  # --- Think tanks & policy research ---
+  - name: "McKinsey QuantumBlack Insights"
+    url: "https://www.mckinsey.com/capabilities/quantumblack/our-insights/rss"
+    category: "ai_research"
+    language: "en"
+
+  - name: "WEF - Artificial Intelligence"
+    url: "https://www.weforum.org/agenda/archive/artificial-intelligence/rss.xml"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "Brookings - AI Research"
+    url: "https://www.brookings.edu/topic/artificial-intelligence/feed/"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "Oxford Internet Institute"
+    url: "https://www.oii.ox.ac.uk/feed/"
+    category: "ai_research"
+    language: "en"
+
+  - name: "Alan Turing Institute"
+    url: "https://www.turing.ac.uk/news/rss.xml"
+    category: "ai_research"
+    language: "en"
+
+  - name: "Ada Lovelace Institute"
+    url: "https://www.adalovelaceinstitute.org/feed/"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "NESTA Innovation"
+    url: "https://www.nesta.org.uk/feed/"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "Stiftung Neue Verantwortung"
+    url: "https://www.stiftung-nv.de/en/rss.xml"
+    category: "ai_policy"
+    language: "en"
+
+  # --- EU institutions ---
+  - name: "EU Innovation Council"
+    url: "https://eic.ec.europa.eu/news-events/news_en/rss.xml"
+    category: "official_eu"
+    language: "en"
+
+  # Politico EU RSS domain (rss.politico.eu) no longer resolves — re-add if it returns.
+  # - name: "Politico EU - Tech"
+  #   url: "https://rss.politico.eu/tech.xml"
+  #   category: "eu_policy"
+  #   language: "en"
+
+  # --- International news wires ---
+  - name: "Reuters Technology"
+    url: "https://feeds.reuters.com/reuters/technologyNews"
+    category: "news_wire"
+    language: "en"
+
+  # --- Digital rights / governance ---
+  - name: "EFF Deeplinks"
+    url: "https://www.eff.org/rss/updates.xml"
+    category: "digital_rights"
+    language: "en"

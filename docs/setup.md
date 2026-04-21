@@ -65,7 +65,50 @@ For GitHub Actions, paste the entire JSON content as the `GOOGLE_SERVICE_ACCOUNT
 
 ---
 
-## 5. Updating sources and report profile
+## 5. Twitter/X social monitoring via self-hosted RSSHub
+
+The public `rsshub.app` instance no longer serves Twitter/X feeds. Self-hosting RSSHub restores the six (and growing) Twitter accounts configured in `sources.yaml`.
+
+### Fastest option: Railway (one-click, ~€3–5/month)
+
+1. Go to [railway.app](https://railway.app) and sign in with GitHub
+2. Click **New Project → Deploy from GitHub repo** and search for `DIYgod/RSSHub`
+   - Or use the official template: **New Project → Template → search "RSSHub"**
+3. Railway will auto-deploy — copy the generated URL (e.g. `https://rsshub-production-xxxx.up.railway.app`)
+4. Test it: open `https://your-rsshub-url/twitter/user/sama` — you should see a feed
+5. In **GitHub Actions secrets**, add:
+   - Secret name: `RSSHUB_INSTANCE`
+   - Value: your Railway URL (no trailing slash)
+
+Then update `config/sources.yaml` to read from the secret. For now, set it directly:
+
+```yaml
+social:
+  rsshub_instance: "https://your-rsshub-url.up.railway.app"
+```
+
+Or keep it as an environment variable and pass it from GitHub Actions by adding to the workflow `env` block:
+```yaml
+RSSHUB_INSTANCE: ${{ secrets.RSSHUB_INSTANCE }}
+```
+(The social fetcher reads `sources.yaml` directly today — a small code change would be needed to override it from env. Until then, update the URL in `sources.yaml` directly.)
+
+### Alternative: Fly.io (free tier available)
+
+```bash
+# Install flyctl, then:
+fly launch --image diygod/rsshub --name rsshub-stefan
+fly scale memory 256  # RSSHub needs ~200MB
+```
+
+### Notes
+- RSSHub does not require a Twitter API key for basic timeline scraping
+- The `rsshub.app` public instance may come back online periodically — check before committing to self-hosting
+- Twitter rate limits apply; the 11 accounts currently configured are well within safe limits
+
+---
+
+## 6. Updating sources and report profile
 
 - **Add/remove news sources**: edit `config/sources.yaml`
 - **Change relevance criteria for a new report**: edit `config/report_profile.yaml`

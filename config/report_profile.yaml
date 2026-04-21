@@ -40,21 +40,58 @@ key_actors:
   - StartupDelta / Dutch Startup Association
   - CBS (Centraal Bureau voor de Statistiek)
   - OECD
+  - ECB (European Central Bank)
+  - BIS (Bank for International Settlements)
+  - Bruegel
 
-# Relevance tier definitions — used verbatim in the LLM prompt.
+# Relevance tier definitions — used verbatim in the LLM scoring prompt.
+# Tier 0 items are excluded from the briefing entirely.
+# Tier 3 items are hidden by default (set INCLUDE_TIER3=true to show them).
+#
+# Calibration note: aim for roughly 3–8 Tier 1/2 articles per day.
+# When uncertain between tiers, err on the side of inclusion (higher tier),
+# not exclusion. Tier 0 is for clearly irrelevant content only.
 relevance_tiers:
+  tier_0:
+    label: "Exclude"
+    description: >
+      Clearly irrelevant to this briefing. Use Tier 0 sparingly and only when
+      confident: consumer product feature launches (new app UI, platform redesigns)
+      with no policy or economic angle; pure entertainment AI applications (AI in
+      film, music, gaming) with no industry-level implications; hardware price
+      changes; app update notices; and articles so paywalled that no signal can be
+      extracted from title and snippet alone. When uncertain whether something is
+      Tier 0 or Tier 3, assign Tier 3.
+
   tier_1:
     label: "Perfectly relevant"
     description: >
-      Directly addresses Dutch AI policy, Dutch startup/VC ecosystem, DNB's role,
+      Directly addresses Dutch AI policy, Dutch startup/VC ecosystem, DNB's mandate,
       or EU AI regulation with clear Dutch implications. Stefan should read this today.
+      Strong signals: published reports or statements from DNB, ECB, OECD, European
+      Commission, CBS, Bruegel, or comparable institutions; government policy
+      announcements affecting the Dutch AI ecosystem; regulatory enforcement actions
+      or clarifications under the EU AI Act; macro AI investment data for the
+      Netherlands or comparable EU economies; significant AI governance developments
+      at EU level.
+
   tier_2:
     label: "Relevant"
     description: >
-      Covers AI policy, startup ecosystems, or AI investment in comparable countries
-      or at EU level. Useful for framing, comparisons, or background. Worth a look.
+      Quality journalism or analysis about AI policy, regulation, or the AI investment
+      and startup landscape — even if not specifically about the Netherlands. Includes:
+      AI policy and regulation developments in EU member states (Germany, France, etc.)
+      or at EU level; VC and startup investment trends in European AI; analysis from
+      credible think tanks or quality media (Euractiv, MIT Technology Review, Sifted,
+      Bruegel, etc.) on AI's economic or regulatory implications; significant AI model
+      releases or capability jumps that are generating serious policy or economic
+      discussion. Worth a look for framing and context.
+
   tier_3:
-    label: "Potentially relevant"
+    label: "Low signal"
     description: >
-      General AI industry news, technical developments, or international trends that
-      may become relevant later or provide useful context. Skim or skip.
+      General AI industry news that may provide background context. Assign Tier 3
+      to: AI industry trends from credible news outlets, broader technology policy
+      developments, international AI ecosystem news, and research from reputable
+      organisations that touches the report's themes only indirectly. This is the
+      default tier for "interesting but not urgent." Skim or skip.

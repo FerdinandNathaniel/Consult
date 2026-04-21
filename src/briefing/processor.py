@@ -3,7 +3,7 @@ LLM processor: scores articles by relevance to the active report profile,
 then generates a short executive summary for Tier 1 items.
 
 All articles are batched into a single prompt to keep API costs minimal.
-Estimated cost: ~€0.05–0.10 per daily run with Claude 3.5 Sonnet.
+Estimated cost: ~€0.05–0.10 per daily run with Claude Sonnet 4.6.
 """
 
 import json
@@ -19,8 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 def _build_client() -> OpenAI:
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise EnvironmentError("OPENROUTER_API_KEY is not set — LLM calls will be skipped")
     return OpenAI(
-        api_key=os.environ["OPENROUTER_API_KEY"],
+        api_key=api_key,
         base_url="https://openrouter.ai/api/v1",
     )
 
@@ -55,17 +58,21 @@ def score_articles(articles: list[Article], profile: dict) -> list[Article]:
         Key themes: {', '.join(profile['themes'])}
         Key actors: {', '.join(profile['key_actors'])}
 
-        Relevance tiers:
+        Relevance tiers — assign EXACTLY one tier to each article:
+        - Tier 0 "{tiers['tier_0']['label']}": {tiers['tier_0']['description']}
         - Tier 1 "{tiers['tier_1']['label']}": {tiers['tier_1']['description']}
         - Tier 2 "{tiers['tier_2']['label']}": {tiers['tier_2']['description']}
         - Tier 3 "{tiers['tier_3']['label']}": {tiers['tier_3']['description']}
+
+        When in doubt between Tier 0 and Tier 3, assign Tier 0.
+        Reserve Tier 3 for credible institutional sources only.
     """)
 
     article_text = "\n".join(_article_block(i, a) for i, a in enumerate(articles))
 
     user_prompt = dedent(f"""\
         Below are {len(articles)} news items collected in the last 24 hours.
-        Assign each a tier (1, 2, or 3) and provide a brief reason (1 sentence).
+        Assign each a tier (0, 1, 2, or 3) and provide a brief reason (1 sentence).
 
         Respond ONLY with valid JSON — an array with one object per article, in the same order:
         [
@@ -98,13 +105,20 @@ def score_articles(articles: list[Article], profile: dict) -> list[Article]:
             if 0 <= idx < len(articles):
                 articles[idx].tier = int(item.get("tier", 3))
                 articles[idx].tier_reason = item.get("reason", "")
-    except Exception as e:
-        logger.error(f"LLM scoring failed: {e}")
-        # Graceful fallback: mark everything tier 3
+    except EnvironmentError as e:
+        logger.warning(f"LLM scoring skipped: {e}")
         for a in articles:
             if a.tier == 0:
                 a.tier = 3
-                a.tier_reason = "Scoring unavailable"
+                a.tier_reason = "Scoring unavailable (API key not set)"
+    except Exception as e:
+        # Log the error type to distinguish auth (401), model (404), network, parse errors
+        error_type = type(e).__name__
+        logger.error(f"LLM scoring failed [{error_type}]: {e}")
+        for a in articles:
+            if a.tier == 0:
+                a.tier = 3
+                a.tier_reason = f"Scoring unavailable ({error_type})"
 
     return articles
 

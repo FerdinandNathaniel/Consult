@@ -31,3 +31,34 @@ Future features and improvements, in rough priority order. Not scheduled — pic
 - How should article-level feedback eventually influence scoring — manual review, or automatically injected into the prompt?
 
 ---
+
+## 2. Podcast monitoring
+
+**What:** Include relevant podcast episodes as a content source, either via episode summaries or full transcript analysis.
+
+**Why:** Several high-quality AI policy and economics podcasts (e.g. ECB/DNB institutional podcasts, Exponential View audio, Dwarkesh Patel) surface long-form analysis and expert interviews that never appear in RSS feeds or news articles. A single episode can contain more signal than a week of articles.
+
+**Two approaches (not mutually exclusive):**
+
+- **Summary-only (cheap):** Most podcasts publish episode descriptions and show notes via RSS. Feed these through the existing scoring pipeline like any other article — zero extra cost. Limitation: show notes are often vague marketing copy rather than informative summaries.
+
+- **Transcript analysis (expensive):** Fetch audio, transcribe via Whisper (free, self-hosted) or a transcription API, chunk the transcript, and run a relevance pass to extract the most pertinent segments. Cost: ~€0.10–0.50 per episode; only worth it for confirmed high-signal shows. Better suited to on-demand triggering than automatic daily runs.
+
+**Suggested phased approach:**
+1. Start with summary-only — add podcast RSS feeds to `sources.yaml` and see what the scorer makes of show notes
+2. If show notes prove too thin, look for feeds that include chapter markers or guest names (many do)
+3. Evaluate transcript analysis only if steps 1–2 consistently miss signal that would have been Tier 1
+
+**Candidate podcasts to evaluate:**
+- ECB Podcast — directly relevant for DNB perspective
+- Exponential View (Azeem Azhar) — AI + economics, directly relevant
+- The AI Policy Podcast (CNAS) — US-focused but useful for EU comparison
+- Dwarkesh Patel — occasional high-signal researcher/policy guests
+- Hard Fork (NYT) — broad tech, lower signal but widely referenced
+
+**Open questions:**
+- Which podcasts publish genuinely informative show notes vs. vague descriptions?
+- Is Whisper self-hostable within GitHub Actions free minutes, or does transcription need a separate always-on service?
+- Should transcript analysis be on-demand (manual trigger per episode) or automatic for a curated shortlist?
+
+---

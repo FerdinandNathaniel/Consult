@@ -19,10 +19,11 @@ rss_feeds:
     category: "national_news"
     language: "nl"
 
-  - name: "Rathenau Instituut"
-    url: "https://www.rathenau.nl/nl/rss.xml"
-    category: "official_nl"
-    language: "nl"
+  # Rathenau Instituut — no public RSS feed; newsletter-only. Re-add if they publish one.
+  # - name: "Rathenau Instituut"
+  #   url: ""
+  #   category: "official_nl"
+  #   language: "nl"
 
   # FD requires a subscription for RSS access — no public feed available.
   # - name: "Het Financieele Dagblad"
@@ -33,6 +34,18 @@ rss_feeds:
   # DNB moved/restricted their RSS feed — no working public URL found.
   # - name: "De Nederlandsche Bank - Nieuws"
   #   url: "https://www.dnb.nl/rss/nieuws.xml"
+  #   category: "official_nl"
+  #   language: "nl"
+
+  # Techleap.nl — no public RSS feed found. Newsletter/blog only.
+  # - name: "Techleap.nl"
+  #   url: ""
+  #   category: "official_nl"
+  #   language: "en"
+
+  # NWO — no public RSS feed; biweekly newsletter only.
+  # - name: "NWO - Nieuws"
+  #   url: ""
   #   category: "official_nl"
   #   language: "nl"
 
@@ -48,19 +61,32 @@ rss_feeds:
     language: "en"
 
   - name: "Euractiv Technology"
-    url: "https://www.euractiv.com/sections/digital/feed/"
+    url: "https://www.euractiv.com/sections/tech/feed"
     category: "eu_policy"
     language: "en"
 
-  - name: "EU Observer"
-    url: "https://euobserver.com/rss/all"
-    category: "eu_policy"
+  # EU Observer redirects to a non-feed page — disabled until correct feed URL is found.
+  # - name: "EU Observer"
+  #   url: "https://euobserver.com/rss/all"
+  #   category: "eu_policy"
+  #   language: "en"
+
+  # Science|Business — no public RSS; newsletter-only.
+  # - name: "Science|Business"
+  #   url: ""
+  #   category: "eu_policy"
+  #   language: "en"
+
+  - name: "European Parliament Think Tank (EPRS)"
+    url: "https://epthinktank.eu/feed/"
+    category: "official_eu"
     language: "en"
 
-  - name: "Science|Business"
-    url: "https://sciencebusiness.net/feed"
+  - name: "Politico EU - Tech & AI"
+    url: "https://www.politico.eu/tag/artificial-intelligence/feed/"
     category: "eu_policy"
     language: "en"
+    # Note: rss.politico.eu no longer resolves; this tag-based URL may work instead — verify
 
   # --- European think tanks (economics & AI policy) ---
   - name: "Bruegel"
@@ -68,14 +94,34 @@ rss_feeds:
     category: "eu_thinktank"
     language: "en"
 
+  - name: "CEPR (Centre for Economic Policy Research)"
+    url: "https://cepr.org/rss.xml"
+    category: "eu_thinktank"
+    language: "en"
+
   # --- Central bank & financial institution research ---
-  - name: "BIS Research (Working Papers)"
-    url: "https://www.bis.org/feeds/Work_papers.xml"
+  - name: "ECB Working Papers"
+    url: "https://www.ecb.europa.eu/rss/wppub.html"
+    category: "central_bank_research"
+    language: "en"
+
+  - name: "ECB Blog"
+    url: "https://www.ecb.europa.eu/rss/blog.html"
+    category: "central_bank_research"
+    language: "en"
+
+  - name: "BIS Central Bank Research Hub"
+    url: "https://www.bis.org/doclist/reshub_papers.rss"
     category: "central_bank_research"
     language: "en"
 
   - name: "IMF Blog"
     url: "https://www.imf.org/en/Blogs/rss"
+    category: "central_bank_research"
+    language: "en"
+
+  - name: "OECD AI Policy Observatory"
+    url: "https://wp.oecd.ai/feed/"
     category: "central_bank_research"
     language: "en"
 
@@ -237,15 +283,16 @@ serendipity_sources:
     language: "en"
 
   # --- Think tanks & policy research ---
-  - name: "McKinsey QuantumBlack Insights"
-    url: "https://www.mckinsey.com/capabilities/quantumblack/our-insights/rss"
+  - name: "McKinsey Insights"
+    url: "https://www.mckinsey.com/insights/rss.asp"
     category: "ai_research"
     language: "en"
 
-  - name: "WEF - Artificial Intelligence"
-    url: "https://www.weforum.org/agenda/archive/artificial-intelligence/rss.xml"
-    category: "ai_policy"
-    language: "en"
+  # WEF — no working AI-section RSS feed found (403 on known URLs). Re-add if confirmed.
+  # - name: "WEF - Artificial Intelligence"
+  #   url: ""
+  #   category: "ai_policy"
+  #   language: "en"
 
   - name: "Brookings - AI Research"
     url: "https://www.brookings.edu/topic/artificial-intelligence/feed/"
@@ -257,31 +304,35 @@ serendipity_sources:
     category: "ai_research"
     language: "en"
 
-  - name: "Alan Turing Institute"
-    url: "https://www.turing.ac.uk/news/rss.xml"
-    category: "ai_research"
-    language: "en"
+  # Alan Turing Institute — RSS returns 403 Forbidden. Blocked by their server config.
+  # - name: "Alan Turing Institute"
+  #   url: "https://www.turing.ac.uk/news/rss.xml"
+  #   category: "ai_research"
+  #   language: "en"
 
   - name: "Ada Lovelace Institute"
     url: "https://www.adalovelaceinstitute.org/feed/"
     category: "ai_policy"
     language: "en"
 
-  - name: "NESTA Innovation"
-    url: "https://www.nesta.org.uk/feed/"
-    category: "ai_policy"
-    language: "en"
+  # NESTA — no public RSS feed found; newsletter-only.
+  # - name: "NESTA Innovation"
+  #   url: ""
+  #   category: "ai_policy"
+  #   language: "en"
 
-  - name: "Stiftung Neue Verantwortung"
-    url: "https://www.stiftung-nv.de/en/rss.xml"
-    category: "ai_policy"
-    language: "en"
+  # Stiftung Neue Verantwortung rebranded to interface-eu.org — no working RSS found.
+  # - name: "Interface (formerly Stiftung Neue Verantwortung)"
+  #   url: ""
+  #   category: "ai_policy"
+  #   language: "en"
 
   # --- EU institutions ---
-  - name: "EU Innovation Council"
-    url: "https://eic.ec.europa.eu/news-events/news_en/rss.xml"
-    category: "official_eu"
-    language: "en"
+  # EU Innovation Council — no working RSS endpoint found.
+  # - name: "EU Innovation Council"
+  #   url: ""
+  #   category: "official_eu"
+  #   language: "en"
 
   # Politico EU RSS domain (rss.politico.eu) no longer resolves — re-add if it returns.
   # - name: "Politico EU - Tech"
@@ -290,13 +341,47 @@ serendipity_sources:
   #   language: "en"
 
   # --- International news wires ---
-  - name: "Reuters Technology"
-    url: "https://feeds.reuters.com/reuters/technologyNews"
-    category: "news_wire"
-    language: "en"
+  # Reuters removed their RSS feeds in 2020. No public feed available.
+  # - name: "Reuters Technology"
+  #   url: ""
+  #   category: "news_wire"
+  #   language: "en"
 
   # --- Digital rights / governance ---
   - name: "EFF Deeplinks"
     url: "https://www.eff.org/rss/updates.xml"
     category: "digital_rights"
+    language: "en"
+
+  # --- AI policy think tanks ---
+  - name: "Centre for the Governance of AI (GovAI)"
+    url: "https://www.governance.ai/post/rss.xml"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "AI Now Institute"
+    url: "https://ainowinstitute.org/feed"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "Future of Life Institute"
+    url: "https://futureoflife.org/feed/"
+    category: "ai_policy"
+    language: "en"
+
+  - name: "CSET (Center for Security and Emerging Technology)"
+    url: "https://cset.georgetown.edu/feed/"
+    category: "ai_policy"
+    language: "en"
+
+  # Bertelsmann Stiftung — no working digital-filtered RSS found; newsletter-only.
+  # - name: "Bertelsmann Stiftung"
+  #   url: ""
+  #   category: "ai_policy"
+  #   language: "en"
+
+  # --- Startup & investment data ---
+  - name: "Dealroom - Blog"
+    url: "https://dealroom.co/blog/feed"
+    category: "eu_startup_vc"
     language: "en"

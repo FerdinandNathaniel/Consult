@@ -1,57 +1,76 @@
 # Backlog
 
-Future features and improvements, in rough priority order. Not scheduled — pick up when the time is right.
+Structured overview of all to-do items. Updated as work progresses.
 
 ---
 
-## 1. Human-in-the-loop interface (GitHub Pages)
+## Active
 
-**What:** A lightweight web interface hosted on GitHub Pages where Stefan can read past briefings and give feedback that feeds back into the pipeline.
+_Nothing currently queued._
 
-**Why:** Closes the loop between output quality and configuration. Right now, improving sources or tier calibration requires editing YAML files directly. The interface makes this accessible without touching code.
+---
+
+## On hold
+
+Deprioritized — revisit once active items are properly finished.
+
+- **Google Drive delivery** — code exists in `src/briefing/drive.py` but is disabled; artifacts via GitHub Actions serve as delivery for now; requires a Google Workspace Shared Drive to re-enable
+- **Email newsletter ingestion** — planned v2 feature (dedicated inbox + IMAP access); not started
+- **Web scraping** — CBS Statline, Rijksoverheid, and AIAct.eu are configured in `config/sources.yaml` under `web_sources` but the fetcher is not implemented
+
+---
+
+## Future (things to look at)
+
+Longer-horizon ideas, not yet scheduled.
+
+### Human-in-the-loop interface (GitHub Pages)
+
+A lightweight web interface hosted on GitHub Pages where Stefan can read past briefings and give feedback that feeds back into the pipeline.
+
+**Why:** Closes the loop between output quality and configuration. Right now, improving sources or tier calibration requires editing YAML files directly.
 
 **Capabilities to include:**
 
-- **Briefing archive** — list and open all past artifacts directly in the browser; no need to download Markdown files from the Actions tab
-- **Source feedback** — mark a source as "too noisy" or "very useful" after reading a briefing; feedback is stored and surfaced as suggestions to add/remove from `sources.yaml`
+- **Briefing archive** — list and open all past artifacts in the browser; no need to download Markdown files from the Actions tab
+- **Source feedback** — mark a source as "too noisy" or "very useful"; feedback stored and surfaced as suggestions to update `sources.yaml`
 - **Inline source editing** — add a new RSS URL directly from the interface; triggers a PR or commit to `sources.yaml`
-- **Article-level feedback** — thumbs up/down on individual articles to help calibrate the tier definitions over time (future: feed this back into the scoring prompt automatically)
+- **Article-level feedback** — thumbs up/down on individual articles to help calibrate tier definitions over time (future: feed back into scoring prompt automatically)
 
 **Suggested technical approach:**
 
-- **Frontend:** Static site on GitHub Pages (`gh-pages` branch or `/docs` folder). Vanilla JS or a small framework (Preact, Alpine.js) — no build pipeline needed.
-- **Reading artifacts:** GitHub REST API (`/repos/{owner}/{repo}/actions/artifacts`) — public repos don't need auth; private repos need a PAT stored in the page or passed at login.
-- **Feedback storage:** Write feedback as a JSON file committed to the repo (e.g. `data/feedback.json`), or open a GitHub Issue with a structured template. A commit-based approach allows the pipeline to read feedback directly.
-- **Auth:** GitHub OAuth (free via GitHub Apps) so only Stefan can submit feedback. Or simpler: a shared secret in the URL if the repo is private and access is already restricted.
+- **Frontend:** Static site on GitHub Pages. Vanilla JS or small framework (Preact, Alpine.js) — no build pipeline needed.
+- **Reading artifacts:** GitHub REST API (`/repos/{owner}/{repo}/actions/artifacts`) — public repos need no auth; private repos need a PAT.
+- **Feedback storage:** JSON file committed to the repo (`data/feedback.json`), or GitHub Issues with a structured template.
+- **Auth:** GitHub OAuth (free via GitHub Apps), or a shared secret in the URL for a private repo.
 - **No backend required** — everything goes through the GitHub API from the browser.
 
 **Open questions before building:**
-- Is the repo public or private? (Affects artifact API auth approach)
+- Is the repo public or private? (Affects artifact API auth)
 - Should source edits go through a PR for review, or commit directly to `main`?
-- How should article-level feedback eventually influence scoring — manual review, or automatically injected into the prompt?
+- How should article-level feedback influence scoring — manual review or auto-inject into the prompt?
 
 ---
 
-## 2. Podcast monitoring
+### Podcast monitoring
 
-**What:** Include relevant podcast episodes as a content source, either via episode summaries or full transcript analysis.
+Include relevant podcast episodes as a content source, either via episode summaries or full transcript analysis.
 
-**Why:** Several high-quality AI policy and economics podcasts (e.g. ECB/DNB institutional podcasts, Exponential View audio, Dwarkesh Patel) surface long-form analysis and expert interviews that never appear in RSS feeds or news articles. A single episode can contain more signal than a week of articles.
+**Why:** Several high-quality AI policy and economics podcasts (ECB/DNB institutional, Exponential View, Dwarkesh Patel) surface long-form analysis that never appears in RSS feeds. A single episode can contain more signal than a week of articles.
 
 **Two approaches (not mutually exclusive):**
 
-- **Summary-only (cheap):** Most podcasts publish episode descriptions and show notes via RSS. Feed these through the existing scoring pipeline like any other article — zero extra cost. Limitation: show notes are often vague marketing copy rather than informative summaries.
-
-- **Transcript analysis (expensive):** Fetch audio, transcribe via Whisper (free, self-hosted) or a transcription API, chunk the transcript, and run a relevance pass to extract the most pertinent segments. Cost: ~€0.10–0.50 per episode; only worth it for confirmed high-signal shows. Better suited to on-demand triggering than automatic daily runs.
+- **Summary-only (cheap):** Most podcasts publish episode descriptions via RSS — feed these through the existing scoring pipeline like any other article. Limitation: show notes are often vague marketing copy rather than informative summaries.
+- **Transcript analysis (expensive):** Fetch audio, transcribe via Whisper, chunk, and run a relevance pass. Cost: ~€0.10–0.50/episode; only worth it for confirmed high-signal shows. Better suited to on-demand triggering than automatic daily runs.
 
 **Suggested phased approach:**
-1. Start with summary-only — add podcast RSS feeds to `sources.yaml` and see what the scorer makes of show notes
-2. If show notes prove too thin, look for feeds that include chapter markers or guest names (many do)
-3. Evaluate transcript analysis only if steps 1–2 consistently miss signal that would have been Tier 1
+1. Add podcast RSS feeds to `sources.yaml` and see what the scorer makes of show notes
+2. If show notes prove too thin, look for feeds that include chapter markers or guest names
+3. Evaluate transcript analysis only if steps 1–2 consistently miss Tier 1 signal
 
-**Candidate podcasts to evaluate:**
+**Candidate podcasts:**
 - ECB Podcast — directly relevant for DNB perspective
-- Exponential View (Azeem Azhar) — AI + economics, directly relevant
+- Exponential View (Azeem Azhar) — AI + economics
 - The AI Policy Podcast (CNAS) — US-focused but useful for EU comparison
 - Dwarkesh Patel — occasional high-signal researcher/policy guests
 - Hard Fork (NYT) — broad tech, lower signal but widely referenced
@@ -62,3 +81,14 @@ Future features and improvements, in rough priority order. Not scheduled — pic
 - Should transcript analysis be on-demand (manual trigger per episode) or automatic for a curated shortlist?
 
 ---
+
+## Done
+
+- **Twitter/X fetching** — self-hosted RSSHub on Railway; configured via `social.rsshub_instance` in `sources.yaml`
+- **GitHub Actions scheduling** — daily at 04:00 UTC (05:00 CET / 06:00 CEST); artifact retention 90 days
+- **RSS feeds** — 11 active sources configured; 3 disabled with notes
+- **LLM scoring & summary** — batched single call; cost ~€0.05–0.10/day
+- **Graceful degradation** — failed sources or LLM calls never abort the run; Stefan always gets something
+- **25-hour lookback** — prevents articles near run boundaries from being silently dropped
+- **README** — full project description, quick-start, architecture diagram, and operational notes (Twitter cookie refresh, Tier 3 flag)
+- **CET timezone correction** — replaced hardcoded `+1` with `ZoneInfo("Europe/Amsterdam")` in `run.py`; now correctly shifts to CEST in summer

@@ -10,7 +10,8 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import yaml
@@ -78,7 +79,7 @@ def main(dry_run: bool = False) -> None:
 
     # --- Write output ---
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    date_str = datetime.now(timezone(timedelta(hours=1))).strftime("%Y-%m-%d")
+    date_str = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%Y-%m-%d")
     filename = f"briefing_{date_str}.md"
     output_path = OUTPUT_DIR / filename
 

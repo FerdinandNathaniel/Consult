@@ -1,6 +1,64 @@
 # Backlog
 
-Structured overview of all to-do items. Updated as work progresses.
+---
+
+## Active
+
+### A. Fix signal quality: approach TBD
+
+**Problem:** The pipeline alternates between two failure modes — (1) too restrictive: relevant content gets filtered out, and (2) too noisy: Tier 2/3 fills up with low-value articles.
+
+Specific fix approach not yet agreed. Revisit after source expansion (B) is live and we can see whether coverage improvement alone changes the pattern.
+
+---
+
+### B. Expand credible source coverage
+
+**Problem:** The pipeline currently has ~25 core RSS feeds and ~15 serendipity sources. That's insufficient to reliably catch EU/NL institutional output, central bank research, and the AI policy think-tank ecosystem. Gaps mean relevant content simply never enters the pipeline, no matter how good the scoring is.
+
+**Sources to add** (add to `config/sources.yaml`; tier each as `core` or `serendipity`):
+
+*EU & central bank institutional (core — high reliability, low noise):*
+- ECB Working Papers RSS — `https://www.ecb.europa.eu/pub/research/working-papers/rss.html`
+- DNB Working Papers — `https://www.dnb.nl/en/publications/dnb-working-papers/` (check for RSS; else add as web_source)
+- European Parliament Think Tank (EPRS) — `https://www.europarl.europa.eu/thinktank/en/recent.rss`
+- OECD iLibrary AI — `https://www.oecd-ilibrary.org/rss/content/area/sti?format=rss` (or search for OECD AI policy RSS)
+- European Investment Bank (EIB) research — check for RSS
+
+*Dutch ecosystem (core):*
+- RVO (Rijksdienst voor Ondernemend Nederland) — AI/digitalisering publications; find RSS or add as web_source
+- Techleap.nl blog/news — `https://techleap.nl/news` (check for RSS)
+- NWO (Dutch Research Council) — AI-related funding news
+- Holland FinTech — fintech + AI in Netherlands financial sector
+
+*AI policy think tanks (serendipity — good signal, infrequent):*
+- Centre for the Governance of AI (GovAI) — `https://www.governance.ai/feed`
+- AI Now Institute — `https://ainowinstitute.org/feed`
+- Future of Life Institute — `https://futureoflife.org/feed/`
+- Zhi-heng Wang / CSET (Center for Security and Emerging Technology) — `https://cset.georgetown.edu/feed/`
+- Bertelsmann Stiftung (German think tank, EU AI policy) — find RSS
+
+*Startup & investment data (serendipity):*
+- Dealroom blog — `https://dealroom.co/blog/feed` (EU startup/VC data, directly relevant)
+- Atomico State of European Tech blog — check for RSS
+- First Minute Capital / Forward Partners — lower priority
+
+**Steps:**
+1. Validate each URL returns a working feed (run locally with `--dry-run` to see fetch counts)
+2. Add confirmed feeds to `sources.yaml` under the appropriate section (`rss_feeds` for core, `serendipity_pool` for lower-frequency)
+3. Set `language` and `category` fields per entry (follow existing conventions)
+4. Run one live briefing, check that new sources contribute articles and score correctly
+
+**Open questions:**
+- DNB's own website: does it have an RSS feed for working papers / press releases? Worth checking — it's the most directly relevant institutional source.
+- Should Dealroom and Sifted overlap? (Sifted is already in core — Dealroom adds data-driven investment angles.)
+- How large should the serendipity pool grow before we change `SERENDIPITY_N` from 3 to 5?
+
+---
+
+## Future
+
+Future features and improvements, in rough priority order. Not scheduled — pick up when the time is right.
 
 ---
 

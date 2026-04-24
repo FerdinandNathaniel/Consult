@@ -438,20 +438,17 @@ const DEFAULT_BRANCH = 'main';
 
 const MODELS = [
   // Anthropic — OpenRouter uses period notation for the minor version (e.g. 4.6, not 4-6)
-  { id: 'anthropic/claude-opus-4.7',     label: 'Claude Opus 4.7',    costIn: 15,   costOut: 75   },
-  { id: 'anthropic/claude-sonnet-4.6',   label: 'Claude Sonnet 4.6',  costIn: 3,    costOut: 15,  isDefault: true },
-  { id: 'anthropic/claude-haiku-4.5',    label: 'Claude Haiku 4.5',   costIn: 0.25, costOut: 1.25 },
-  // OpenAI
-  { id: 'openai/gpt-4o',                 label: 'GPT-4o',             costIn: 2.50, costOut: 10   },
-  { id: 'openai/gpt-4o-mini',            label: 'GPT-4o mini',        costIn: 0.15, costOut: 0.60 },
-  { id: 'openai/o1-mini',                label: 'o1-mini',            costIn: 1.10, costOut: 4.40 },
+  { id: 'anthropic/claude-sonnet-4.6',          label: 'Claude Sonnet 4.6',       costIn: 3,     costOut: 15,   isDefault: true },
+  { id: 'anthropic/claude-haiku-4.5',           label: 'Claude Haiku 4.5',        costIn: 0.25,  costOut: 1.25  },
+  // Qwen
+  { id: 'qwen/qwen3.6-plus',                    label: 'Qwen3.6 Plus',            costIn: 0.325, costOut: 1.95  },
   // Google
-  { id: 'google/gemini-2.5-pro',         label: 'Gemini 2.5 Pro',     costIn: 1.25, costOut: 10   },
-  { id: 'google/gemini-2.5-flash',       label: 'Gemini 2.5 Flash',   costIn: 0.15, costOut: 0.60 },
-  // Other
-  { id: 'qwen/qwen-2.5-72b-instruct',    label: 'Qwen 2.5 72B',       costIn: 0.13, costOut: 0.40 },
-  { id: 'deepseek/deepseek-r1',          label: 'DeepSeek R1',        costIn: 0.55, costOut: 2.19 },
-  { id: 'deepseek/deepseek-chat',        label: 'DeepSeek V3',        costIn: 0.14, costOut: 0.28 },
+  { id: 'google/gemma-4-31b-it',                label: 'Gemma 4 31B',             costIn: 0.13,  costOut: 0.38  },
+  // OpenAI
+  { id: 'openai/gpt-oss-safeguard-20b:nitro',   label: 'GPT-OSS Safeguard 20B',   costIn: 0.075, costOut: 0.30  },
+  // DeepSeek
+  { id: 'deepseek/deepseek-v4-flash',           label: 'DeepSeek V4 Flash',       costIn: 0.14,  costOut: 0.28  },
+  { id: 'deepseek/deepseek-v3.2',               label: 'DeepSeek V3.2',           costIn: 0.25,  costOut: 0.38  },
 ];
 
 // Rough token usage per full briefing run (article scoring + summary)

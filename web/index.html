@@ -382,7 +382,8 @@
     <h1>Briefing Dashboard</h1>
     <span id="run-status"></span>
     <div class="model-picker">
-      <select id="model-select" class="model-select" onchange="updateModelCost()"></select>
+      <select id="model-select" class="model-select" onchange="updateModelCost(); updateSaveDefaultBtn()"></select>
+      <button class="btn" id="save-default-btn" onclick="saveDefaultModel()" title="Save as default for all future runs, including scheduled ones">Save as default</button>
       <span id="model-cost" class="model-cost"></span>
     </div>
     <button class="btn btn-green" id="run-btn" onclick="triggerRun()">▶ Run now</button>
@@ -435,21 +436,21 @@ const BRIEFINGS_DIR  = 'briefings';
 // via OpenRouter; actual costs vary with caching and context length.
 
 const MODELS = [
-  // Anthropic
-  { id: 'anthropic/claude-opus-4-5',           label: 'Claude Opus 4.5',    costIn: 15,   costOut: 75   },
-  { id: 'anthropic/claude-sonnet-4-6',          label: 'Claude Sonnet 4.6',  costIn: 3,    costOut: 15,  isDefault: true },
-  { id: 'anthropic/claude-haiku-4-5-20251001',  label: 'Claude Haiku 4.5',   costIn: 0.25, costOut: 1.25 },
+  // Anthropic — OpenRouter uses period notation for the minor version (e.g. 4.6, not 4-6)
+  { id: 'anthropic/claude-opus-4.7',     label: 'Claude Opus 4.7',    costIn: 15,   costOut: 75   },
+  { id: 'anthropic/claude-sonnet-4.6',   label: 'Claude Sonnet 4.6',  costIn: 3,    costOut: 15,  isDefault: true },
+  { id: 'anthropic/claude-haiku-4.5',    label: 'Claude Haiku 4.5',   costIn: 0.25, costOut: 1.25 },
   // OpenAI
-  { id: 'openai/gpt-4o',                        label: 'GPT-4o',             costIn: 2.50, costOut: 10   },
-  { id: 'openai/gpt-4o-mini',                   label: 'GPT-4o mini',        costIn: 0.15, costOut: 0.60 },
-  { id: 'openai/o1-mini',                       label: 'o1-mini',            costIn: 1.10, costOut: 4.40 },
+  { id: 'openai/gpt-4o',                 label: 'GPT-4o',             costIn: 2.50, costOut: 10   },
+  { id: 'openai/gpt-4o-mini',            label: 'GPT-4o mini',        costIn: 0.15, costOut: 0.60 },
+  { id: 'openai/o1-mini',                label: 'o1-mini',            costIn: 1.10, costOut: 4.40 },
   // Google
-  { id: 'google/gemini-2.5-pro',                label: 'Gemini 2.5 Pro',     costIn: 1.25, costOut: 10   },
-  { id: 'google/gemini-2.5-flash',              label: 'Gemini 2.5 Flash',   costIn: 0.15, costOut: 0.60 },
-  // Chinese
-  { id: 'qwen/qwen-2.5-72b-instruct',           label: 'Qwen 2.5 72B',       costIn: 0.13, costOut: 0.40 },
-  { id: 'deepseek/deepseek-r1',                 label: 'DeepSeek R1',        costIn: 0.55, costOut: 2.19 },
-  { id: 'deepseek/deepseek-chat',               label: 'DeepSeek V3',        costIn: 0.14, costOut: 0.28 },
+  { id: 'google/gemini-2.5-pro',         label: 'Gemini 2.5 Pro',     costIn: 1.25, costOut: 10   },
+  { id: 'google/gemini-2.5-flash',       label: 'Gemini 2.5 Flash',   costIn: 0.15, costOut: 0.60 },
+  // Other
+  { id: 'qwen/qwen-2.5-72b-instruct',    label: 'Qwen 2.5 72B',       costIn: 0.13, costOut: 0.40 },
+  { id: 'deepseek/deepseek-r1',          label: 'DeepSeek R1',        costIn: 0.55, costOut: 2.19 },
+  { id: 'deepseek/deepseek-chat',        label: 'DeepSeek V3',        costIn: 0.14, costOut: 0.28 },
 ];
 
 // Rough token usage per full briefing run (article scoring + summary)
@@ -460,6 +461,8 @@ function estimateCost(m) {
   const c = (m.costIn * EST_IN_K + m.costOut * EST_OUT_K) / 1000;
   return c < 0.005 ? '<$0.01' : `~$${c.toFixed(2)}`;
 }
+
+let _currentDefaultModel = null;
 
 function initModelSelect() {
   const sel = document.getElementById('model-select');
@@ -472,12 +475,79 @@ function initModelSelect() {
     sel.appendChild(opt);
   });
   updateModelCost();
+  loadDefaultModel();
 }
 
 function updateModelCost() {
   const sel = document.getElementById('model-select');
   const m = MODELS.find(m => m.id === sel.value);
   document.getElementById('model-cost').textContent = m ? `est. ${estimateCost(m)}/run` : '';
+}
+
+function updateSaveDefaultBtn() {
+  const btn = document.getElementById('save-default-btn');
+  const sel = document.getElementById('model-select');
+  if (!btn) return;
+  const isSaved = sel.value === _currentDefaultModel;
+  btn.disabled = isSaved;
+  btn.textContent = isSaved ? 'Default ✓' : 'Save as default';
+}
+
+async function loadDefaultModel() {
+  try {
+    const data = await ghGet('actions/variables/OPENROUTER_MODEL');
+    _currentDefaultModel = data.value;
+    const sel = document.getElementById('model-select');
+    // If the saved value matches a known option, select it; otherwise add it
+    if ([...sel.options].some(o => o.value === _currentDefaultModel)) {
+      sel.value = _currentDefaultModel;
+    } else if (_currentDefaultModel) {
+      const opt = document.createElement('option');
+      opt.value = _currentDefaultModel;
+      opt.textContent = _currentDefaultModel;
+      sel.insertBefore(opt, sel.firstChild);
+      sel.value = _currentDefaultModel;
+    }
+    updateModelCost();
+    updateSaveDefaultBtn();
+  } catch {
+    // Variable not set yet — leave the hardcoded default selected
+    updateSaveDefaultBtn();
+  }
+}
+
+async function saveDefaultModel() {
+  const btn = document.getElementById('save-default-btn');
+  const model = document.getElementById('model-select').value;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    // Try PATCH (update existing variable); fall back to POST (create new)
+    let r = await ghFetch('actions/variables/OPENROUTER_MODEL', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'OPENROUTER_MODEL', value: model }),
+    });
+    if (r.status === 404) {
+      r = await ghFetch('actions/variables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'OPENROUTER_MODEL', value: model }),
+      });
+    }
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.message || `HTTP ${r.status}`);
+    }
+    _currentDefaultModel = model;
+    updateSaveDefaultBtn();
+    toast('Default model saved — scheduled runs will use this model.');
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Save as default';
+    toast(`Could not save default: ${e.message}`, true);
+  }
 }
 
 // ── State ────────────────────────────────────────────────────────────────────

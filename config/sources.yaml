@@ -19,6 +19,12 @@ rss_feeds:
     category: "national_news"
     language: "nl"
 
+  # ARQ Foundation (arq.org) — no public RSS feed found. Re-add if they publish one.
+  # - name: "ARQ Foundation"
+  #   url: ""
+  #   category: "official_nl"
+  #   language: "nl"
+
   # Rathenau Instituut — no public RSS feed; newsletter-only. Re-add if they publish one.
   # - name: "Rathenau Instituut"
   #   url: ""
@@ -88,7 +94,7 @@ rss_feeds:
     language: "en"
     # Note: rss.politico.eu no longer resolves; this tag-based URL may work instead — verify
 
-  # --- European think tanks (economics & AI policy) ---
+  # --- European & Dutch think tanks (economics & AI policy) ---
   - name: "Bruegel"
     url: "https://www.bruegel.org/rss.xml"
     category: "eu_thinktank"
@@ -98,6 +104,16 @@ rss_feeds:
     url: "https://cepr.org/rss.xml"
     category: "eu_thinktank"
     language: "en"
+
+  - name: "Centre for Future Generations"
+    url: "https://cfg.eu/feed"
+    category: "eu_thinktank"
+    language: "en"
+
+  - name: "Delta Instituut"
+    url: "https://deltainstituut.substack.com/feed"
+    category: "eu_thinktank"
+    language: "nl"
 
   # --- Central bank & financial institution research ---
   - name: "ECB Working Papers"
@@ -235,6 +251,87 @@ social:
     - handle: "nlaic"
       name: "NL AI Coalition"
       relevance_hint: "Dutch AI ecosystem, policy, public-private collaboration"
+
+    # --- International AI research & labs ---
+    - handle: "blaiseaguera"
+      name: "Blaise Agüera y Arcas"
+      relevance_hint: "AI research, Google DeepMind, societal impact of AI"
+
+    - handle: "arthurmensch"
+      name: "Arthur Mensch"
+      relevance_hint: "CEO Mistral AI, open-source LLMs, European AI"
+
+    - handle: "Thom_Wolf"
+      name: "Thomas Wolf"
+      relevance_hint: "Co-founder & CSO Hugging Face, open-source AI"
+
+    - handle: "TiRune"
+      name: "Tijmen Blankevoort"
+      relevance_hint: "AI Research Scientist at Meta, quantization, efficient AI"
+
+    - handle: "douwekiela"
+      name: "Douwe Kiela"
+      relevance_hint: "CEO Contextual AI, RAG, enterprise AI"
+
+    - handle: "dpkingma"
+      name: "Durk Kingma"
+      relevance_hint: "AI researcher at Anthropic, VAEs, generative models"
+
+    # --- Dutch AI founders & startups ---
+    - handle: "bobvanluijt"
+      name: "Bob van Luijt"
+      relevance_hint: "CEO Weaviate, vector databases, AI-native applications"
+
+    - handle: "salar"
+      name: "Salar al Khafaji"
+      relevance_hint: "CEO Monumental, construction robotics, Dutch deep tech"
+
+    - handle: "RogierFischer"
+      name: "Rogier Fischer"
+      relevance_hint: "Co-founder & CEO Hadrian, cybersecurity"
+
+    - handle: "jelleprins"
+      name: "Jelle Prins"
+      relevance_hint: "Co-founder Cradle, AI-driven protein design, biotech"
+
+    - handle: "jakubzavrel"
+      name: "Jakub Zavrel"
+      relevance_hint: "CEO Zeta Alpha, AI research discovery, NLP"
+
+    # --- Dutch academia ---
+    - handle: "wellingmax"
+      name: "Max Welling"
+      relevance_hint: "Co-founder CuspAI, AI for materials science, UvA professor"
+
+    - handle: "marcelge"
+      name: "Marcel van Gerven"
+      relevance_hint: "Professor Donders Institute, computational neuroscience, AI"
+
+    - handle: "cgmsnoek"
+      name: "Cees Snoek"
+      relevance_hint: "Scientific Director Amsterdam AI, computer vision, UvA"
+
+    - handle: "JZuidema"
+      name: "Jelle Zuidema"
+      relevance_hint: "Professor UvA ILLC, NLP, explainable AI, cognitive modelling"
+
+    # --- Dutch policy, think tanks & investment ---
+    - handle: "annevveenstra"
+      name: "Anne Fleur van Veenstra"
+      relevance_hint: "Director of Science TNO, AI policy, digital government"
+
+    - handle: "MaaikeOh"
+      name: "Maaike Okano-Heijmans"
+      relevance_hint: "Senior researcher Clingendael, geopolitics of tech, EU-Asia"
+
+    - handle: "twehmeier"
+      name: "Tom Wehmeier"
+      relevance_hint: "Partner Atomico, State of European Tech, VC intelligence"
+
+    # --- Global AI voices ---
+    - handle: "DavidTimis"
+      name: "David Timis"
+      relevance_hint: "AI governance, future of work, global AI risk awareness"
 
 # =============================================================================
 # OFFICIAL PUBLICATIONS & DATA SOURCES

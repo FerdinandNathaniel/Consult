@@ -42,50 +42,50 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
     if not articles:
         return articles, True
 
-    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
-    client = _build_client()
-
-    report = profile["report"]
-    tiers = profile["relevance_tiers"]
-
-    system_prompt = dedent(f"""\
-        You are a research assistant helping a policy analyst at a central bank.
-        The analyst is writing a report titled: "{report['title_en']}"
-        Perspective: {report['perspective']}
-
-        Report focus:
-        {profile['core_focus']}
-
-        Key themes: {', '.join(profile['themes'])}
-        Key actors: {', '.join(profile['key_actors'])}
-
-        Relevance tiers — assign EXACTLY one tier to each article:
-        - Tier 0 "{tiers['tier_0']['label']}": {tiers['tier_0']['description']}
-        - Tier 1 "{tiers['tier_1']['label']}": {tiers['tier_1']['description']}
-        - Tier 2 "{tiers['tier_2']['label']}": {tiers['tier_2']['description']}
-        - Tier 3 "{tiers['tier_3']['label']}": {tiers['tier_3']['description']}
-
-        When in doubt between Tier 0 and Tier 3, assign Tier 0.
-        Reserve Tier 3 for credible institutional sources only.
-    """)
-
-    article_text = "\n".join(_article_block(i, a) for i, a in enumerate(articles))
-
-    user_prompt = dedent(f"""\
-        Below are {len(articles)} news items collected in the last 24 hours.
-        Assign each a tier (0, 1, 2, or 3) and provide a brief reason (1 sentence).
-
-        Respond ONLY with valid JSON — an array with one object per article, in the same order:
-        [
-          {{"index": 0, "tier": 1, "reason": "..."}},
-          ...
-        ]
-
-        Articles:
-        {article_text}
-    """)
-
     try:
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+        client = _build_client()
+
+        report = profile["report"]
+        tiers = profile["relevance_tiers"]
+
+        system_prompt = dedent(f"""\
+            You are a research assistant helping a policy analyst at a central bank.
+            The analyst is writing a report titled: "{report['title_en']}"
+            Perspective: {report['perspective']}
+
+            Report focus:
+            {profile['core_focus']}
+
+            Key themes: {', '.join(profile['themes'])}
+            Key actors: {', '.join(profile['key_actors'])}
+
+            Relevance tiers — assign EXACTLY one tier to each article:
+            - Tier 0 "{tiers['tier_0']['label']}": {tiers['tier_0']['description']}
+            - Tier 1 "{tiers['tier_1']['label']}": {tiers['tier_1']['description']}
+            - Tier 2 "{tiers['tier_2']['label']}": {tiers['tier_2']['description']}
+            - Tier 3 "{tiers['tier_3']['label']}": {tiers['tier_3']['description']}
+
+            When in doubt between Tier 0 and Tier 3, assign Tier 0.
+            Reserve Tier 3 for credible institutional sources only.
+        """)
+
+        article_text = "\n".join(_article_block(i, a) for i, a in enumerate(articles))
+
+        user_prompt = dedent(f"""\
+            Below are {len(articles)} news items collected in the last 24 hours.
+            Assign each a tier (0, 1, 2, or 3) and provide a brief reason (1 sentence).
+
+            Respond ONLY with valid JSON — an array with one object per article, in the same order:
+            [
+              {{"index": 0, "tier": 1, "reason": "..."}},
+              ...
+            ]
+
+            Articles:
+            {article_text}
+        """)
+
         response = client.chat.completions.create(
             model=model,
             messages=[
@@ -130,31 +130,31 @@ def generate_executive_summary(articles: list[Article], profile: dict) -> str:
     if not tier1:
         return ""
 
-    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
-    client = _build_client()
-    report = profile["report"]
-
-    items_text = "\n".join(
-        f"- {a.title} ({a.source_name}): {a.summary}" for a in tier1
-    )
-
-    prompt = dedent(f"""\
-        You are briefing a senior policy analyst at {report['perspective']}.
-        They are writing a report on: "{report['title_en']}"
-
-        These are today's most directly relevant news items:
-        {items_text}
-
-        Write a concise executive summary (3–5 sentences, no bullet points) that:
-        - Highlights the most important developments
-        - Notes any patterns or connections between items
-        - Is written in a direct, analytical tone suitable for a central bank analyst
-        - Is in English
-
-        Do not start with "Today" or repeat the report title.
-    """)
-
     try:
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+        client = _build_client()
+        report = profile["report"]
+
+        items_text = "\n".join(
+            f"- {a.title} ({a.source_name}): {a.summary}" for a in tier1
+        )
+
+        prompt = dedent(f"""\
+            You are briefing a senior policy analyst at {report['perspective']}.
+            They are writing a report on: "{report['title_en']}"
+
+            These are today's most directly relevant news items:
+            {items_text}
+
+            Write a concise executive summary (3–5 sentences, no bullet points) that:
+            - Highlights the most important developments
+            - Notes any patterns or connections between items
+            - Is written in a direct, analytical tone suitable for a central bank analyst
+            - Is in English
+
+            Do not start with "Today" or repeat the report title.
+        """)
+
         response = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],

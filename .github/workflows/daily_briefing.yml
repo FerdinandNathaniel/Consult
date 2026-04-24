@@ -2,9 +2,8 @@ name: Daily Briefing
 
 on:
   schedule:
-    # 04:00 UTC = 05:00 CET (winter) / 06:00 CEST (summer)
-    # Adjust to 03:00 UTC in summer if you want it reliably before 05:00 local:
-    - cron: '0 4 * * *'
+    # 03:00 UTC = 04:00 CET (winter) / 05:00 CEST (summer)
+    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       model:
@@ -31,27 +30,16 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt google-api-python-client google-auth
+        run: pip install -r requirements.txt
 
       - name: Run briefing
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_MODEL: ${{ github.event.inputs.model || vars.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.6' }}
-          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          OPENROUTER_MODEL: ${{ github.event.inputs.model || vars.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4-6' }}
           OUTPUT_DIR: outputs
           SERENDIPITY_N: "5"
           INCLUDE_TIER3: "true"
         run: python -m src.briefing.run
-
-      - name: Write Google service account credentials
-        # Only runs if the secret is set; secrets context is not usable in `if:`, so the check is done in shell
-        env:
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-        run: |
-          if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
-            mkdir -p config
-            echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > config/google_service_account.json
-          fi
 
       - name: Commit briefing to repository
         run: |

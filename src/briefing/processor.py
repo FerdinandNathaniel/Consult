@@ -43,7 +43,7 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
         return articles, True
 
     try:
-        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
         client = _build_client()
 
         report = profile["report"]
@@ -149,7 +149,7 @@ def generate_executive_summary(articles: list[Article], profile: dict) -> str:
         return ""
 
     try:
-        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
         client = _build_client()
         report = profile["report"]
 

@@ -5,8 +5,9 @@ RSSHub converts Twitter/X profiles into RSS feeds without requiring an API key.
 Public instance: https://rsshub.app — reliable for small-scale use.
 For production reliability, consider self-hosting: https://docs.rsshub.app/deploy/
 
-If an account's RSS fails (rate limit or account change), it is skipped silently
-and logged as a warning. The briefing continues with whatever did succeed.
+HTTP 401/403 responses indicate the RSSHub instance's OAuth token has expired and
+needs renewal; these are surfaced separately so the briefing can warn the user.
+Other failures (network, rate-limit, etc.) are skipped silently.
 """
 
 import logging
@@ -35,11 +36,17 @@ def _parse_date(entry) -> datetime:
     return datetime.now(timezone.utc)
 
 
-def fetch_social_articles(social_config: dict) -> list[Article]:
+def fetch_social_articles(social_config: dict) -> tuple[list[Article], list[str]]:
+    """Return (articles, auth_failed_handles).
+
+    auth_failed_handles contains handles that returned HTTP 401/403, indicating
+    the RSSHub OAuth token needs renewal.
+    """
     instance = social_config.get("rsshub_instance", "https://rsshub.app")
     accounts = social_config.get("twitter_accounts", [])
     cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
     articles: list[Article] = []
+    auth_failed_handles: list[str] = []
 
     for account in accounts:
         handle = account["handle"]
@@ -50,6 +57,16 @@ def fetch_social_articles(social_config: dict) -> list[Article]:
             })
             response.raise_for_status()
             parsed = feedparser.parse(response.text)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code in (401, 403):
+                logger.warning(
+                    f"Social auth error for @{handle}: HTTP {e.response.status_code} "
+                    f"— RSSHub token needs renewal"
+                )
+                auth_failed_handles.append(handle)
+            else:
+                logger.warning(f"Social fetch failed for @{handle}: {e}")
+            continue
         except Exception as e:
             logger.warning(f"Social fetch failed for @{handle}: {e}")
             continue
@@ -77,4 +94,4 @@ def fetch_social_articles(social_config: dict) -> list[Article]:
             ))
 
     logger.info(f"Social fetcher: {len(articles)} posts from {len(accounts)} accounts")
-    return articles
+    return articles, auth_failed_handles

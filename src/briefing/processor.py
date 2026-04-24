@@ -37,11 +37,12 @@ def _article_block(idx: int, article: Article) -> str:
     """)
 
 
-def score_articles(articles: list[Article], profile: dict) -> list[Article]:
+def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article], bool]:
+    """Return (articles, scoring_ok). scoring_ok is False when the LLM call failed."""
     if not articles:
-        return articles
+        return articles, True
 
-    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
     client = _build_client()
 
     report = profile["report"]
@@ -105,22 +106,22 @@ def score_articles(articles: list[Article], profile: dict) -> list[Article]:
             if 0 <= idx < len(articles):
                 articles[idx].tier = int(item.get("tier", 3))
                 articles[idx].tier_reason = item.get("reason", "")
+        return articles, True
     except EnvironmentError as e:
         logger.warning(f"LLM scoring skipped: {e}")
         for a in articles:
             if a.tier == 0:
                 a.tier = 3
                 a.tier_reason = "Scoring unavailable (API key not set)"
+        return articles, False
     except Exception as e:
-        # Log the error type to distinguish auth (401), model (404), network, parse errors
         error_type = type(e).__name__
         logger.error(f"LLM scoring failed [{error_type}]: {e}")
         for a in articles:
             if a.tier == 0:
                 a.tier = 3
                 a.tier_reason = f"Scoring unavailable ({error_type})"
-
-    return articles
+        return articles, False
 
 
 def generate_executive_summary(articles: list[Article], profile: dict) -> str:
@@ -129,7 +130,7 @@ def generate_executive_summary(articles: list[Article], profile: dict) -> str:
     if not tier1:
         return ""
 
-    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
     client = _build_client()
     report = profile["report"]
 

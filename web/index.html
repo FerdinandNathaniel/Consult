@@ -92,6 +92,27 @@
     header h1 { font-size: 15px; font-weight: 600; flex: 1; }
 
     #run-status { font-size: 12px; color: var(--muted); }
+    #run-btn { min-width: 90px; justify-content: center; }
+
+    /* ── Run progress ────────────────────────────────── */
+
+    #run-progress {
+      height: 3px;
+      background: transparent;
+      overflow: hidden;
+      display: none;
+    }
+    #run-progress.active { display: block; }
+    #run-progress-bar {
+      height: 100%;
+      width: 40%;
+      background: var(--accent);
+      animation: progress-slide 1.6s ease-in-out infinite;
+    }
+    @keyframes progress-slide {
+      0%   { margin-left: -40%; }
+      100% { margin-left: 100%; }
+    }
 
     nav {
       background: var(--surface);
@@ -338,6 +359,7 @@
     <button class="btn btn-green" id="run-btn" onclick="triggerRun()">▶ Run now</button>
     <button class="btn" onclick="logout()" style="font-size:12px;color:var(--muted)">Sign out</button>
   </header>
+  <div id="run-progress"><div id="run-progress-bar"></div></div>
 
   <nav>
     <button class="tab-btn active" id="tab-briefings" onclick="switchTab('briefings')">Briefings</button>
@@ -380,6 +402,9 @@ const FEEDBACK_PATH  = 'data/source_feedback.json';
 const BRIEFINGS_DIR  = 'briefings';
 
 // ── State ────────────────────────────────────────────────────────────────────
+
+let _runDispatchedAt = null;
+let _pollTimer = null;
 
 const state = {
   pat: localStorage.getItem('gh_pat') || '',
@@ -512,10 +537,10 @@ async function loadBriefings() {
       `).join('')}
     `;
 
-    el.addEventListener('click', e => {
+    el.onclick = e => {
       const btn = e.target.closest('[data-path]');
       if (btn) openBriefing(btn.dataset.path, btn.dataset.name);
-    });
+    };
   } catch {
     el.innerHTML = `
       <div class="empty">
@@ -559,30 +584,71 @@ function fmtDate(filename) {
 // ── Run trigger ──────────────────────────────────────────────────────────────
 
 async function triggerRun() {
-  const btn    = document.getElementById('run-btn');
-  const status = document.getElementById('run-status');
+  const btn = document.getElementById('run-btn');
   btn.disabled = true;
   btn.textContent = 'Starting…';
 
   try {
+    const before = new Date();
+    before.setSeconds(before.getSeconds() - 10);
+    _runDispatchedAt = before.toISOString();
+
     const r = await ghFetch(`actions/workflows/${WORKFLOW_FILE}/dispatches`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ref: 'main' }),
     });
     if (r.status === 204) {
-      toast('Run started — check the Actions tab for progress.');
-      status.textContent = 'Triggered ✓';
-      setTimeout(() => { status.textContent = ''; }, 6000);
+      btn.textContent = 'Running…';
+      showRunProgress();
+      _pollTimer = setTimeout(pollRunStatus, 8000);
     } else {
       const body = await r.json().catch(() => ({}));
       throw new Error(body.message || `HTTP ${r.status}`);
     }
   } catch (e) {
     toast(e.message, true);
-  } finally {
     btn.disabled = false;
     btn.textContent = '▶ Run now';
+  }
+}
+
+function showRunProgress() {
+  document.getElementById('run-progress').classList.add('active');
+  document.getElementById('run-status').textContent = 'In progress…';
+}
+
+function hideRunProgress(statusText) {
+  clearTimeout(_pollTimer);
+  document.getElementById('run-progress').classList.remove('active');
+  const btn = document.getElementById('run-btn');
+  btn.disabled = false;
+  btn.textContent = '▶ Run now';
+  const statusEl = document.getElementById('run-status');
+  statusEl.textContent = statusText || '';
+  if (statusText) setTimeout(() => { statusEl.textContent = ''; }, 6000);
+}
+
+async function pollRunStatus() {
+  try {
+    const data = await ghGet(`actions/workflows/${WORKFLOW_FILE}/runs?per_page=10`);
+    const run = data.workflow_runs?.find(r => r.created_at >= _runDispatchedAt);
+
+    if (!run || run.status !== 'completed') {
+      _pollTimer = setTimeout(pollRunStatus, 15000);
+      return;
+    }
+
+    if (run.conclusion === 'success') {
+      hideRunProgress('Completed ✓');
+      toast('Briefing ready — refreshing list…');
+      await loadBriefings();
+    } else {
+      hideRunProgress(`Finished (${run.conclusion})`);
+      toast(`Run ${run.conclusion} — check the Actions tab.`, true);
+    }
+  } catch {
+    _pollTimer = setTimeout(pollRunStatus, 20000);
   }
 }
 

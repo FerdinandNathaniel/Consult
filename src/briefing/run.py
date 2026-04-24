@@ -56,7 +56,8 @@ def main(dry_run: bool = False) -> None:
     # --- Fetch core sources ---
     articles = []
     articles += fetch_rss_articles(sources.get("rss_feeds", []))
-    articles += fetch_social_articles(sources.get("social", {}))
+    social_articles, social_auth_failures = fetch_social_articles(sources.get("social", {}))
+    articles += social_articles
 
     # Handle web_sources: items tagged type=rss are passed through the RSS fetcher
     web_as_rss = [
@@ -92,12 +93,13 @@ def main(dry_run: bool = False) -> None:
     tier1_threshold = int(os.environ.get("TIER1_THRESHOLD", 3))
     iterations_used = 1
 
+    scoring_ok = True
     if not dry_run:
-        articles = score_articles(articles, profile)
+        articles, scoring_ok = score_articles(articles, profile)
 
         # Quality pass: if Tier 1 is sparse, fetch more from the remaining serendipity pool
         remaining_pool = [s for s in serendipity_pool if s not in sampled_serendipity]
-        while iterations_used < max_iterations:
+        while scoring_ok and iterations_used < max_iterations:
             tier1_count = sum(1 for a in articles if a.tier == 1)
             if tier1_count >= tier1_threshold or not remaining_pool:
                 break
@@ -116,7 +118,7 @@ def main(dry_run: bool = False) -> None:
                 seen_urls.add(a.url)
 
             if new_articles:
-                new_articles = score_articles(new_articles, profile)
+                new_articles, _ = score_articles(new_articles, profile)
                 articles += new_articles
 
             iterations_used += 1
@@ -140,6 +142,8 @@ def main(dry_run: bool = False) -> None:
         profile,
         serendipity_names=serendipity_names,
         iterations_used=iterations_used,
+        scoring_ok=scoring_ok,
+        social_auth_failures=social_auth_failures if social_auth_failures else None,
     )
 
     # --- Write output ---

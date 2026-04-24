@@ -25,6 +25,8 @@ def format_briefing(
     generated_at: datetime | None = None,
     serendipity_names: list[str] | None = None,
     iterations_used: int = 1,
+    scoring_ok: bool = True,
+    social_auth_failures: list[str] | None = None,
 ) -> str:
     if generated_at is None:
         generated_at = datetime.now(CET)
@@ -43,6 +45,22 @@ def format_briefing(
         f"*Gegenereerd om {time_str} | Rapport: {report_title}*",
         "",
     ]
+
+    # Warnings
+    if not scoring_ok:
+        lines += [
+            "> ⚠️ **LLM-scoring mislukt** — artikelen zijn niet op relevantie gescoord. "
+            "Controleer of `OPENROUTER_API_KEY` correct is ingesteld als GitHub-secret "
+            "en of het model beschikbaar is via OpenRouter.",
+            "",
+        ]
+    if social_auth_failures:
+        handles_str = ", ".join(f"@{h}" for h in social_auth_failures)
+        lines += [
+            f"> ⚠️ **Social media feeds niet geladen** ({handles_str}) — "
+            "het RSSHub-toegangstoken moet worden vernieuwd.",
+            "",
+        ]
 
     # Executive summary
     if executive_summary:

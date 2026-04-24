@@ -5,7 +5,12 @@ on:
     # 04:00 UTC = 05:00 CET (winter) / 06:00 CEST (summer)
     # Adjust to 03:00 UTC in summer if you want it reliably before 05:00 local:
     - cron: '0 4 * * *'
-  workflow_dispatch:  # Allows manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'OpenRouter model ID (leave blank to use repo default)'
+        required: false
+        default: ''
 
 jobs:
   briefing:
@@ -31,7 +36,7 @@ jobs:
       - name: Run briefing
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4-6' }}
+          OPENROUTER_MODEL: ${{ github.event.inputs.model || vars.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4-6' }}
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           OUTPUT_DIR: outputs
           SERENDIPITY_N: "5"

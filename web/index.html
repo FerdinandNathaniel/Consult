@@ -187,7 +187,7 @@
     .btn-primary { background: var(--accent); color: #fff; border-color: transparent; }
     .btn-primary:hover { background: var(--accent-hover); }
     .btn-green { background: var(--good); color: #fff; border-color: transparent; }
-    .btn-green:hover { filter: brightness(1.1); }
+    .btn-green:hover { background: var(--good); filter: brightness(1.1); }
 
     input[type="text"], input[type="url"], input[type="password"] {
       border: 1px solid var(--border);
@@ -325,11 +325,36 @@
     .toast.error { background: var(--bad); }
     @keyframes slide-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+    /* ── Model picker ───────────────────────────────────── */
+
+    .model-picker {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .model-select {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 8px;
+      font-size: 13px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      max-width: 200px;
+    }
+    .model-cost {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
     @media (max-width: 600px) {
       main { padding: 16px; }
       header, nav { padding: 0 16px; }
       #briefing-viewer { padding: 18px; }
       .row { flex-direction: column; }
+      .model-select { max-width: 130px; }
+      .model-cost { display: none; }
     }
   </style>
 </head>
@@ -356,6 +381,10 @@
   <header>
     <h1>Briefing Dashboard</h1>
     <span id="run-status"></span>
+    <div class="model-picker">
+      <select id="model-select" class="model-select" onchange="updateModelCost()"></select>
+      <span id="model-cost" class="model-cost"></span>
+    </div>
     <button class="btn btn-green" id="run-btn" onclick="triggerRun()">▶ Run now</button>
     <button class="btn" onclick="logout()" style="font-size:12px;color:var(--muted)">Sign out</button>
   </header>
@@ -400,6 +429,56 @@ const WORKFLOW_FILE  = 'daily_briefing.yml';
 const SOURCES_PATH   = 'config/sources.yaml';
 const FEEDBACK_PATH  = 'data/source_feedback.json';
 const BRIEFINGS_DIR  = 'briefings';
+
+// ── Model catalogue ──────────────────────────────────────────────────────────
+// Prices in USD per million tokens (input / output). Estimates as of mid-2025
+// via OpenRouter; actual costs vary with caching and context length.
+
+const MODELS = [
+  // Anthropic
+  { id: 'anthropic/claude-opus-4-5',           label: 'Claude Opus 4.5',    costIn: 15,   costOut: 75   },
+  { id: 'anthropic/claude-sonnet-4-6',          label: 'Claude Sonnet 4.6',  costIn: 3,    costOut: 15,  isDefault: true },
+  { id: 'anthropic/claude-haiku-4-5-20251001',  label: 'Claude Haiku 4.5',   costIn: 0.25, costOut: 1.25 },
+  // OpenAI
+  { id: 'openai/gpt-4o',                        label: 'GPT-4o',             costIn: 2.50, costOut: 10   },
+  { id: 'openai/gpt-4o-mini',                   label: 'GPT-4o mini',        costIn: 0.15, costOut: 0.60 },
+  { id: 'openai/o1-mini',                       label: 'o1-mini',            costIn: 1.10, costOut: 4.40 },
+  // Google
+  { id: 'google/gemini-2.5-pro',                label: 'Gemini 2.5 Pro',     costIn: 1.25, costOut: 10   },
+  { id: 'google/gemini-2.5-flash',              label: 'Gemini 2.5 Flash',   costIn: 0.15, costOut: 0.60 },
+  // Chinese
+  { id: 'qwen/qwen-2.5-72b-instruct',           label: 'Qwen 2.5 72B',       costIn: 0.13, costOut: 0.40 },
+  { id: 'deepseek/deepseek-r1',                 label: 'DeepSeek R1',        costIn: 0.55, costOut: 2.19 },
+  { id: 'deepseek/deepseek-chat',               label: 'DeepSeek V3',        costIn: 0.14, costOut: 0.28 },
+];
+
+// Rough token usage per full briefing run (article scoring + summary)
+const EST_IN_K  = 15;   // ~15k input tokens
+const EST_OUT_K = 1.5;  // ~1.5k output tokens
+
+function estimateCost(m) {
+  const c = (m.costIn * EST_IN_K + m.costOut * EST_OUT_K) / 1000;
+  return c < 0.005 ? '<$0.01' : `~$${c.toFixed(2)}`;
+}
+
+function initModelSelect() {
+  const sel = document.getElementById('model-select');
+  sel.innerHTML = '';
+  MODELS.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = `${m.label}  (${estimateCost(m)}/run)`;
+    if (m.isDefault) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  updateModelCost();
+}
+
+function updateModelCost() {
+  const sel = document.getElementById('model-select');
+  const m = MODELS.find(m => m.id === sel.value);
+  document.getElementById('model-cost').textContent = m ? `est. ${estimateCost(m)}/run` : '';
+}
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -496,6 +575,7 @@ function logout() {
 function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
+  initModelSelect();
   loadFeedback().then(loadBriefings);
 }
 
@@ -514,10 +594,10 @@ function switchTab(tab) {
 async function loadBriefings() {
   const el = document.getElementById('briefings-list');
   try {
-    const files = await ghGet(`contents/${BRIEFINGS_DIR}`);
-    const mds = files
-      .filter(f => f.name.endsWith('.md'))
-      .sort((a, b) => b.name.localeCompare(a.name));
+    const { tree } = await ghGet(`git/trees/main?recursive=1`);
+    const mds = tree
+      .filter(f => f.type === 'blob' && f.path.startsWith(BRIEFINGS_DIR + '/') && f.path.endsWith('.md'))
+      .sort((a, b) => b.path.localeCompare(a.path));
 
     if (!mds.length) {
       el.innerHTML = '<div class="empty">No briefings yet — run the pipeline first.</div>';
@@ -529,12 +609,15 @@ async function loadBriefings() {
         <span>Past briefings</span>
         <span class="count">${mds.length} available</span>
       </div>
-      ${mds.map(f => `
-        <div class="briefing-row">
-          <span class="briefing-date">${fmtDate(f.name)}</span>
-          <button class="btn" data-path="${esc(f.path)}" data-name="${esc(f.name)}">Read</button>
-        </div>
-      `).join('')}
+      ${mds.map(f => {
+        const name = f.path.split('/').pop();
+        return `
+          <div class="briefing-row">
+            <span class="briefing-date">${fmtDate(name)}</span>
+            <button class="btn" data-path="${esc(f.path)}" data-name="${esc(name)}">Read</button>
+          </div>
+        `;
+      }).join('')}
     `;
 
     el.onclick = e => {
@@ -593,10 +676,11 @@ async function triggerRun() {
     before.setSeconds(before.getSeconds() - 10);
     _runDispatchedAt = before.toISOString();
 
+    const model = document.getElementById('model-select').value;
     const r = await ghFetch(`actions/workflows/${WORKFLOW_FILE}/dispatches`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref: 'main' }),
+      body: JSON.stringify({ ref: 'main', inputs: { model } }),
     });
     if (r.status === 204) {
       btn.textContent = 'Running…';

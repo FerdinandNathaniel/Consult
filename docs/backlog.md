@@ -151,7 +151,7 @@ A lightweight dashboard on GitHub Pages for reading briefings, managing sources,
 **One-time setup (Fabian):**
 1. Make repo public in Settings → General (required for GitHub Pages on free plan)
 2. Enable Pages in Settings → Pages → Source: GitHub Actions
-3. Create a fine-grained PAT scoped to this repo with `Contents: read/write` and `Actions: write` permissions, and share it with Stefan once (e.g. Signal)
+3. Create a fine-grained PAT scoped to this repo with `Contents: read/write`, `Actions: write`, and `Variables: read/write` permissions, then share it with Stefan once (e.g. Signal). `Variables` is needed for the "Save as default" button; without it the PATCH to `actions/variables/OPENROUTER_MODEL` returns 403.
 
 **Stefan's one-time setup:**
 - Paste the token Fabian sent into the dashboard — stored in the browser, never needed again

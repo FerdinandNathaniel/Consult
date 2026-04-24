@@ -10,6 +10,8 @@ on:
 jobs:
   briefing:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -44,6 +46,16 @@ jobs:
             mkdir -p config
             echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > config/google_service_account.json
           fi
+
+      - name: Commit briefing to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p briefings
+          cp outputs/briefing_*.md briefings/ 2>/dev/null || true
+          git add briefings/
+          git diff --staged --quiet || git commit -m "briefing: $(ls outputs/briefing_*.md | head -1 | xargs basename | sed 's/briefing_//;s/\.md//')"
+          git push
 
       - name: Upload briefing as workflow artifact
         uses: actions/upload-artifact@v4

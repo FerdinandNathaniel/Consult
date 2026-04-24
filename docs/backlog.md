@@ -6,7 +6,60 @@ Structured overview of all to-do items. Updated as work progresses.
 
 ## Active
 
-_Nothing currently queued._
+### A. Fix signal quality
+
+Calibrate scoring so the briefing surfaces the right articles — less noise, no important items missed.
+
+**Why:** Over-filtering or mis-tiering means Stefan either misses signal or has to wade through irrelevant items.
+
+**Status:** Approach not yet settled — the previously proposed fix (flip tie-break default from Tier 0 to Tier 3) was rejected as the right path forward. Root cause needs more investigation before a fix is prescribed.
+
+**Files:** `config/report_profile.yaml`, `src/briefing/processor.py`
+
+---
+
+### B. Expand and maintain sources
+
+Keep `config/sources.yaml` up to date with high-quality, relevant feeds as the landscape evolves.
+
+**Why:** The AI policy and investment space moves fast; new institutional sources appear and existing ones shift in relevance. A one-off expansion is not enough — this needs a repeatable process.
+
+**Status:** Some sources added (ECB WP, DNB WP, others), but coverage is still incomplete. Will remain a recurring gap until a proper discovery-and-validation workflow is in place.
+
+**Recurring need:** This item should stay active until two things exist:
+1. A defined process for discovering and vetting new sources (part of item C skills)
+2. The human-in-the-loop dashboard (Future) — which lets Stefan flag and add sources without touching YAML
+
+**Candidate sources still to evaluate:** EPRS, GovAI, AI Now, Dealroom, RVO, Techleap, NWO (and others surfaced during use)
+
+---
+
+### C. Set up project skills (CLAUDE.md)
+
+Define reusable Claude Code skills and CLAUDE.md instructions so every session starts with full context and consistent behavior — no manual re-explanation needed.
+
+**Why:** Without explicit skills, Claude re-derives conventions each session (or gets them wrong). Good skills also reduce prompt tokens and make the agent faster.
+
+**Inspired by:** [Analysis of 12k+ repos with CLAUDE.md files](https://www.reddit.com/r/ClaudeCode/comments/1srm2vv/we_analyzed_12356_repos_with_claudemd_files/)
+
+**Skills / instructions to define:**
+
+- **Coding style** — preferred Python patterns for this repo (naming, structure, error handling, no unnecessary abstractions)
+- **Documentation (README)** — when and how to update the README; what sections to keep current (sources, architecture, ops notes)
+- **Explicit memory protocol** — where repo-level memory lives, how to add/update/remove entries, what belongs in memory vs. backlog vs. code comments
+- **Adding new sources** — step-by-step: find the RSS URL, check it exists, add to `config/sources.yaml` with the right fields, verify with a dry-run
+- **Dry-run procedure** — exact command(s) to run a local dry-run without hitting the LLM or producing artifacts; what to check in the output
+- **Backlog protocol** — how to read `docs/backlog.md`, mark items done, move items between sections, add a new item (format, required fields)
+
+**Suggested approach:**
+
+1. Start with a `CLAUDE.md` at repo root covering the most-used workflows (dry-run, adding sources, backlog)
+2. Add a `.claude/skills/` directory for longer multi-step skills (e.g. "add a new source end-to-end")
+3. Validate each skill in a real session before marking done
+
+**Open questions:**
+- Should skills live in `.claude/` or inline in `CLAUDE.md`?
+- Are any skills general enough to go in the user-level `~/.claude/` instead?
 
 ---
 
@@ -26,29 +79,29 @@ Longer-horizon ideas, not yet scheduled.
 
 ### Human-in-the-loop interface (GitHub Pages)
 
-A lightweight web interface hosted on GitHub Pages where Stefan can read past briefings and give feedback that feeds back into the pipeline.
+A lightweight dashboard on GitHub Pages for reading briefings, managing sources, and triggering runs.
 
-**Why:** Closes the loop between output quality and configuration. Right now, improving sources or tier calibration requires editing YAML files directly.
+**Status:** v1 built and merged. Files: `web/index.html`, `.github/workflows/deploy_pages.yml`.
 
-**Capabilities to include:**
+**What's live in v1:**
+- Briefing archive — read past briefings in the browser (pipeline now commits to `briefings/` on each run)
+- Source feedback — 👍/👎 per source, stored in `data/source_feedback.json`
+- Add source — form commits directly to `config/sources.yaml` on main
+- Manual run trigger — calls `workflow_dispatch` via GitHub API
+- PAT auth — stored in localStorage; no backend needed
 
-- **Briefing archive** — list and open all past artifacts in the browser; no need to download Markdown files from the Actions tab
-- **Source feedback** — mark a source as "too noisy" or "very useful"; feedback stored and surfaced as suggestions to update `sources.yaml`
-- **Inline source editing** — add a new RSS URL directly from the interface; triggers a PR or commit to `sources.yaml`
-- **Article-level feedback** — thumbs up/down on individual articles to help calibrate tier definitions over time (future: feed back into scoring prompt automatically)
+**One-time setup (Fabian):**
+1. Make repo public in Settings → General (required for GitHub Pages on free plan)
+2. Enable Pages in Settings → Pages → Source: GitHub Actions
+3. Create a fine-grained PAT scoped to this repo with `Contents: read/write` and `Actions: write` permissions, and share it with Stefan once (e.g. Signal)
 
-**Suggested technical approach:**
+**Stefan's one-time setup:**
+- Paste the token Fabian sent into the dashboard — stored in the browser, never needed again
 
-- **Frontend:** Static site on GitHub Pages. Vanilla JS or small framework (Preact, Alpine.js) — no build pipeline needed.
-- **Reading artifacts:** GitHub REST API (`/repos/{owner}/{repo}/actions/artifacts`) — public repos need no auth; private repos need a PAT.
-- **Feedback storage:** JSON file committed to the repo (`data/feedback.json`), or GitHub Issues with a structured template.
-- **Auth:** GitHub OAuth (free via GitHub Apps), or a shared secret in the URL for a private repo.
-- **No backend required** — everything goes through the GitHub API from the browser.
-
-**Open questions before building:**
-- Is the repo public or private? (Affects artifact API auth)
-- Should source edits go through a PR for review, or commit directly to `main`?
-- How should article-level feedback influence scoring — manual review or auto-inject into the prompt?
+**What's not in v1 (future):**
+- Article-level feedback (thumbs up/down on individual items)
+- Source feedback feeding back into scoring automatically
+- Briefings archive beyond 90-day artifact retention (now stored in `briefings/` in the repo indefinitely)
 
 ---
 

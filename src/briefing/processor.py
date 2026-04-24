@@ -43,7 +43,7 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
         return articles, True
 
     try:
-        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
         client = _build_client()
 
         report = profile["report"]
@@ -93,11 +93,18 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.2,
-            response_format={"type": "json_object"},
         )
-        raw = response.choices[0].message.content
+        raw = response.choices[0].message.content or ""
+        logger.debug(f"Scoring raw response (first 200 chars): {raw[:200]!r}")
+        # Strip markdown code fences that some models add despite json_object mode
+        clean = raw.strip()
+        if clean.startswith("```"):
+            clean = clean.split("```", 2)[1]
+            if clean.startswith("json"):
+                clean = clean[4:]
+            clean = clean.rsplit("```", 1)[0].strip()
         # The model may wrap the array in a key; handle both formats
-        parsed = json.loads(raw)
+        parsed = json.loads(clean)
         if isinstance(parsed, dict):
             parsed = next(iter(parsed.values()))
 
@@ -116,7 +123,11 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
         return articles, False
     except Exception as e:
         error_type = type(e).__name__
-        logger.error(f"LLM scoring failed [{error_type}]: {e}")
+        raw_snippet = locals().get("raw", "")
+        if raw_snippet:
+            logger.error(f"LLM scoring failed [{error_type}]: {e}\nRaw response (first 500 chars): {str(raw_snippet)[:500]}")
+        else:
+            logger.error(f"LLM scoring failed [{error_type}]: {e}")
         for a in articles:
             if a.tier == 0:
                 a.tier = 3
@@ -131,7 +142,7 @@ def generate_executive_summary(articles: list[Article], profile: dict) -> str:
         return ""
 
     try:
-        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
         client = _build_client()
         report = profile["report"]
 

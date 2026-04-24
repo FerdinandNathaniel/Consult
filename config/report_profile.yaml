@@ -7,13 +7,13 @@ report:
   title: "AI-beleid en het startup- en investeringsklimaat in Nederland"
   title_en: "AI Policy and the Startup and Investment Climate in the Netherlands"
   author: "Stefan"
-  perspective: "De Nederlandsche Bank (DNB)"
+  perspective: "Startup Investment & Climate (Netherlands in the regional and global context)"
   status: "in_progress"
 
 # What this report is fundamentally about — used as the primary relevance lens.
 core_focus: >
   This report examines the intersection of national AI policy and the Dutch startup
-  and investment ecosystem, written from the perspective of the Dutch central bank (DNB).
+  and investment ecosystem, written from the perspective of start-up investment.
   It covers how AI regulation, public investment, and government strategy shape the
   conditions for AI startups and venture capital in the Netherlands, and how the
   Netherlands compares to peer countries (Germany, France, UK) and EU-level initiatives.
@@ -23,12 +23,14 @@ themes:
   - AI startups and scale-ups in the Netherlands
   - Venture capital and private investment in Dutch AI
   - Dutch national AI strategy and government programs
-  - "DNB perspective on AI: financial stability, supervision, innovation"
+  - "Startup investment perspective on AI: market dynamics, funding, innovation"
   - EU AI Act implementation and its impact on Dutch firms
   - Comparison with Germany, France, UK AI ecosystems
   - Public funding mechanisms (invest-NL, RVO, Horizon Europe)
   - AI talent and skills policy (universities, immigration)
   - AI and productivity / economic impact
+  - Geopolitical comparison of AI startup investment (USA vs Europe vs China)
+  - Cross-border AI capital flows and competitiveness implications for Europe
 
 # Key organisations and stakeholders to watch.
 key_actors:
@@ -43,6 +45,11 @@ key_actors:
   - ECB (European Central Bank)
   - BIS (Bank for International Settlements)
   - Bruegel
+  - NVCA (National Venture Capital Association, US)
+  - Pitchbook / Dealroom
+  - CSET (Center for Security and Emerging Technology)
+  - US OSTP (Office of Science and Technology Policy)
+  - MIIT (China Ministry of Industry and Information Technology)
 
 # Relevance tier definitions — used verbatim in the LLM scoring prompt.
 # Tier 0 items are excluded from the briefing entirely.
@@ -55,43 +62,48 @@ relevance_tiers:
   tier_0:
     label: "Exclude"
     description: >
-      Clearly irrelevant to this briefing. Use Tier 0 sparingly and only when
-      confident: consumer product feature launches (new app UI, platform redesigns)
-      with no policy or economic angle; pure entertainment AI applications (AI in
-      film, music, gaming) with no industry-level implications; hardware price
-      changes; app update notices; and articles so paywalled that no signal can be
-      extracted from title and snippet alone. When uncertain whether something is
-      Tier 0 or Tier 3, assign Tier 3.
+      Content with no policy or economic angle. Assign Tier 0 only when confident:
+      consumer product feature announcements (new UI, app updates, platform redesigns);
+      AI in entertainment (film, music, gaming) with no regulatory or market
+      implications; hardware price changes; and items where the title and summary
+      together contain no extractable signal (empty, truncated, or fully opaque).
+      When uncertain between Tier 0 and Tier 3, assign Tier 3.
 
   tier_1:
     label: "Perfectly relevant"
     description: >
-      Directly addresses Dutch AI policy, Dutch startup/VC ecosystem, DNB's mandate,
-      or EU AI regulation with clear Dutch implications. Stefan should read this today.
-      Strong signals: published reports or statements from DNB, ECB, OECD, European
-      Commission, CBS, Bruegel, or comparable institutions; government policy
-      announcements affecting the Dutch AI ecosystem; regulatory enforcement actions
-      or clarifications under the EU AI Act; macro AI investment data for the
-      Netherlands or comparable EU economies; significant AI governance developments
-      at EU level.
+      Assign Tier 1 when the article directly concerns: (a) Dutch AI policy,
+      regulation, or government programmes; (b) the Dutch startup or VC ecosystem;
+      (c) DNB's mandate on AI (financial stability, supervision, or innovation);
+      (d) EU AI Act enforcement, clarification, or implementation with Dutch or
+      industry-wide impact; (e) published data or analysis comparing AI startup
+      investment across the USA, Europe, and China from Dealroom, Pitchbook, CSET,
+      OECD, or comparable data providers; or (f) official publications from DNB,
+      ECB, European Commission, OECD, CBS, BIS, or Bruegel touching these themes.
+      Geographic or institutional specificity is the key Tier 1 signal — a credible
+      source alone is not sufficient.
 
   tier_2:
     label: "Relevant"
     description: >
-      Quality journalism or analysis about AI policy, regulation, or the AI investment
-      and startup landscape — even if not specifically about the Netherlands. Includes:
-      AI policy and regulation developments in EU member states (Germany, France, etc.)
-      or at EU level; VC and startup investment trends in European AI; analysis from
-      credible think tanks or quality media (Euractiv, MIT Technology Review, Sifted,
-      Bruegel, etc.) on AI's economic or regulatory implications; significant AI model
-      releases or capability jumps that are generating serious policy or economic
-      discussion. Worth a look for framing and context.
+      Assign Tier 2 when the article addresses AI policy, regulation, or startup
+      investment at EU level or in peer economies (Germany, France, UK) without
+      specific Dutch focus; or when it covers the US or Chinese AI ecosystem
+      (government investment, VC trends, industrial policy) in a way that has direct
+      comparative relevance to Europe's competitive position. Also Tier 2: analysis
+      from Euractiv, Sifted, MIT Technology Review, The Information, or comparable
+      outlets on AI's economic or regulatory implications, even without a Dutch angle.
+      Distinguish from Tier 1 by the absence of Dutch specificity or primary-source
+      institutional data.
 
   tier_3:
     label: "Low signal"
     description: >
-      General AI industry news that may provide background context. Assign Tier 3
-      to: AI industry trends from credible news outlets, broader technology policy
-      developments, international AI ecosystem news, and research from reputable
-      organisations that touches the report's themes only indirectly. This is the
-      default tier for "interesting but not urgent." Skim or skip.
+      Assign Tier 3 to general AI industry coverage that touches the report's themes
+      only indirectly: AI product launches with potential but unconfirmed policy
+      implications; international ecosystem news outside the EU/US/China comparison
+      frame; technology research with no clear economic or regulatory angle; and
+      background coverage from credible outlets that is broader than the report's
+      geographic or thematic scope. Tier 3 is the correct tier for "this might
+      eventually matter" — not for clearly irrelevant content (Tier 0) and not for
+      content with a clear EU or comparative angle (Tier 2).

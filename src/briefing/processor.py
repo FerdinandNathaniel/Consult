@@ -57,8 +57,11 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
             Report focus:
             {profile['core_focus']}
 
-            Key themes: {', '.join(profile['themes'])}
-            Key actors: {', '.join(profile['key_actors'])}
+            Key themes:
+            {chr(10).join(f'- {t}' for t in profile['themes'])}
+
+            Key actors:
+            {chr(10).join(f'- {a}' for a in profile['key_actors'])}
 
             Relevance tiers — assign EXACTLY one tier to each article:
             - Tier 0 "{tiers['tier_0']['label']}": {tiers['tier_0']['description']}
@@ -66,15 +69,19 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
             - Tier 2 "{tiers['tier_2']['label']}": {tiers['tier_2']['description']}
             - Tier 3 "{tiers['tier_3']['label']}": {tiers['tier_3']['description']}
 
-            When in doubt between Tier 0 and Tier 3, assign Tier 0.
-            Reserve Tier 3 for credible institutional sources only.
+            When uncertain between Tier 0 and Tier 3, assign Tier 3 — Tier 0 is only
+            for content with no policy or economic angle whatsoever. Tier 3 is available
+            for any source type; it is not reserved for institutional sources.
         """)
 
         article_text = "\n".join(_article_block(i, a) for i, a in enumerate(articles))
 
         user_prompt = dedent(f"""\
-            Below are {len(articles)} news items collected in the last 24 hours.
-            Assign each a tier (0, 1, 2, or 3) and provide a brief reason (1 sentence).
+            Below are {len(articles)} news items.
+            Assign each a tier (0, 1, 2, or 3) and provide a brief reason (1 sentence)
+            written for the analyst — explain specifically why this article is or isn't
+            relevant to the report, referencing the theme or actor it relates to where
+            possible. Do not write generic reasons like "this article is about AI."
 
             Respond ONLY with valid JSON — an array with one object per article, in the same order:
             [
@@ -150,25 +157,34 @@ def generate_executive_summary(articles: list[Article], profile: dict) -> str:
             f"- {a.title} ({a.source_name}): {a.summary}" for a in tier1
         )
 
-        prompt = dedent(f"""\
+        system_msg = dedent(f"""\
             You are briefing a senior policy analyst at {report['perspective']}.
             They are writing a report on: "{report['title_en']}"
+            Write in a direct, analytical tone suitable for a central bank analyst. Be in English.
+        """)
 
+        user_msg = dedent(f"""\
             These are today's most directly relevant news items:
             {items_text}
 
-            Write a concise executive summary (3–5 sentences, no bullet points) that:
+            Write a concise executive summary (no bullet points) that:
+            - Opens with the most substantive finding, not a scene-setting sentence
             - Highlights the most important developments
             - Notes any patterns or connections between items
-            - Is written in a direct, analytical tone suitable for a central bank analyst
-            - Is in English
+            - Cites the source organisation by name when it strengthens the point
+              (e.g. "DNB noted..." or "According to Dealroom data...")
+            - Scales length to the material: 2–3 sentences if there is only one item,
+              up to 5 sentences for a busy news day with many items
 
             Do not start with "Today" or repeat the report title.
         """)
 
         response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg},
+            ],
             temperature=0.3,
         )
         return response.choices[0].message.content.strip()

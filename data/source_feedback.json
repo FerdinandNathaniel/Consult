@@ -3,5 +3,10 @@
     "name": "European Commission - Digital Strategy",
     "rating": "good",
     "updated": "2026-04-24"
+  },
+  "https://aisnakeoil.substack.com/feed": {
+    "name": "AI Snake Oil (Narayanan & Kapoor)",
+    "rating": "bad",
+    "updated": "2026-04-24"
   }
 }

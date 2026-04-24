@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Briefing Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f6f8fa;
+      --surface: #ffffff;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --accent: #0969da;
+      --accent-hover: #0550ae;
+      --good: #1a7f37;
+      --good-bg: #dafbe1;
+      --bad: #cf222e;
+      --bad-bg: #ffebe9;
+      --radius: 6px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+    }
+
+    /* ── Auth ────────────────────────────────────────────── */
+
+    #auth-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .auth-card h1 { font-size: 20px; margin-bottom: 6px; }
+    .auth-card .subtitle { color: var(--muted); margin-bottom: 24px; }
+
+    .auth-steps {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .auth-steps ol { padding-left: 18px; }
+    .auth-steps li { margin-bottom: 4px; }
+    .auth-steps code {
+      background: #ebebeb;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    /* ── App chrome ──────────────────────────────────────── */
+
+    #app-screen { display: none; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 { font-size: 15px; font-weight: 600; flex: 1; }
+
+    #run-status { font-size: 12px; color: var(--muted); }
+
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--muted);
+      cursor: pointer;
+      margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    main {
+      padding: 24px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── Common ──────────────────────────────────────────── */
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .card-header .count { color: var(--muted); font-weight: 400; }
+
+    .empty, .loading {
+      padding: 40px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--text);
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: transparent; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-green { background: var(--good); color: #fff; border-color: transparent; }
+    .btn-green:hover { filter: brightness(1.1); }
+
+    input[type="text"], input[type="url"], input[type="password"] {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      font-size: 14px;
+      width: 100%;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--text);
+    }
+    input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(9,105,218,.15); }
+
+    .row { display: flex; gap: 8px; margin-bottom: 8px; }
+
+    .error-msg { color: var(--bad); font-size: 13px; margin-top: 8px; }
+
+    /* ── Briefings ───────────────────────────────────────── */
+
+    .briefing-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .briefing-row:last-child { border-bottom: none; }
+    .briefing-date { flex: 1; font-weight: 500; }
+
+    #briefing-viewer {
+      margin-top: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      display: none;
+    }
+
+    #briefing-viewer h1 { font-size: 18px; margin: 18px 0 6px; }
+    #briefing-viewer h2 { font-size: 15px; margin: 16px 0 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+    #briefing-viewer h3 { font-size: 13px; font-weight: 600; margin: 14px 0 4px; }
+    #briefing-viewer p { margin-bottom: 10px; }
+    #briefing-viewer ul, #briefing-viewer ol { padding-left: 20px; margin-bottom: 10px; }
+    #briefing-viewer li { margin-bottom: 3px; }
+    #briefing-viewer a { color: var(--accent); }
+    #briefing-viewer hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+    #briefing-viewer code { background: var(--bg); padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+    #briefing-viewer blockquote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--muted); margin: 10px 0; }
+
+    .viewer-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .viewer-title { font-size: 15px; font-weight: 600; }
+
+    /* ── Sources ─────────────────────────────────────────── */
+
+    .source-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .source-row:last-child { border-bottom: none; }
+
+    .source-info { flex: 1; min-width: 0; }
+    .source-name { font-weight: 500; }
+    .source-url {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .badge-good { background: var(--good-bg); color: var(--good); }
+    .badge-bad  { background: var(--bad-bg);  color: var(--bad);  }
+
+    .flag-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 32px;
+      height: 28px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .flag-btn:hover { background: var(--bg); }
+    .flag-btn.active-good { background: var(--good-bg); border-color: var(--good); }
+    .flag-btn.active-bad  { background: var(--bad-bg);  border-color: var(--bad);  }
+
+    .add-source-panel {
+      padding: 16px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+    }
+    .add-source-panel .label {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .add-source-panel .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .add-source-panel code { font-size: 11px; background: #e5e7ea; padding: 1px 4px; border-radius: 3px; }
+
+    /* ── Toast ───────────────────────────────────────────── */
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: #fff;
+      background: var(--text);
+      z-index: 999;
+      animation: slide-up .15s ease;
+      max-width: 320px;
+    }
+    .toast.error { background: var(--bad); }
+    @keyframes slide-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      main { padding: 16px; }
+      header, nav { padding: 0 16px; }
+      #briefing-viewer { padding: 18px; }
+      .row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Auth ──────────────────────────────────────────────────────────────── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>Briefing Dashboard</h1>
+    <p class="subtitle">Enter the access token to continue.</p>
+    <div class="auth-steps">
+      Paste the access token you received. It will be stored only in this browser — you won't need to enter it again.
+    </div>
+    <div class="row">
+      <input type="password" id="pat-input" placeholder="Paste token here…" />
+      <button class="btn btn-primary" id="auth-btn" onclick="saveToken()">Save</button>
+    </div>
+    <p class="error-msg" id="auth-error"></p>
+  </div>
+</div>
+
+<!-- ── App ───────────────────────────────────────────────────────────────── -->
+<div id="app-screen">
+  <header>
+    <h1>Briefing Dashboard</h1>
+    <span id="run-status"></span>
+    <button class="btn btn-green" id="run-btn" onclick="triggerRun()">▶ Run now</button>
+    <button class="btn" onclick="logout()" style="font-size:12px;color:var(--muted)">Sign out</button>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" id="tab-briefings" onclick="switchTab('briefings')">Briefings</button>
+    <button class="tab-btn"        id="tab-sources"   onclick="switchTab('sources')">Sources</button>
+  </nav>
+
+  <main>
+    <div id="pane-briefings">
+      <div class="card" id="briefings-list">
+        <div class="loading">Loading briefings…</div>
+      </div>
+      <div id="briefing-viewer"></div>
+    </div>
+
+    <div id="pane-sources" style="display:none">
+      <div class="card" id="sources-list">
+        <div class="loading">Loading sources…</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- CDN libs -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
+
+<script>
+'use strict';
+
+// ── Config ──────────────────────────────────────────────────────────────────
+
+const OWNER          = 'FerdinandNathaniel';
+const REPO           = 'Consult';
+const WORKFLOW_FILE  = 'daily_briefing.yml';
+const SOURCES_PATH   = 'config/sources.yaml';
+const FEEDBACK_PATH  = 'data/source_feedback.json';
+const BRIEFINGS_DIR  = 'briefings';
+
+// ── State ────────────────────────────────────────────────────────────────────
+
+const state = {
+  pat: localStorage.getItem('gh_pat') || '',
+  feedback: {},
+  feedbackSha: null,
+  sources: [],
+};
+
+// ── Encoding helpers ─────────────────────────────────────────────────────────
+
+function b64decode(str) {
+  // GitHub API returns base64 with newlines; handle UTF-8 correctly
+  const binary = atob(str.replace(/\s/g, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+// ── GitHub API ───────────────────────────────────────────────────────────────
+
+async function ghFetch(path, opts = {}) {
+  const url = path.startsWith('https://') ? path
+    : `https://api.github.com/repos/${OWNER}/${REPO}/${path}`;
+  return fetch(url, {
+    ...opts,
+    headers: {
+      Authorization: `token ${state.pat}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      ...(opts.headers || {}),
+    },
+  });
+}
+
+async function ghGet(path) {
+  const r = await ghFetch(path);
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.message || `HTTP ${r.status}`);
+  }
+  return r.json();
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+async function saveToken() {
+  const pat = document.getElementById('pat-input').value.trim();
+  const errEl = document.getElementById('auth-error');
+  const btn   = document.getElementById('auth-btn');
+  if (!pat) return;
+
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+
+  try {
+    const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}`, {
+      headers: { Authorization: `token ${pat}`, Accept: 'application/vnd.github+json' },
+    });
+    if (!r.ok) throw new Error('Token rejected or no access to repo.');
+    state.pat = pat;
+    localStorage.setItem('gh_pat', pat);
+    showApp();
+  } catch (e) {
+    errEl.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('gh_pat');
+  state.pat = '';
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// ── App init ─────────────────────────────────────────────────────────────────
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  loadFeedback().then(loadBriefings);
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  ['briefings', 'sources'].forEach(t => {
+    document.getElementById(`pane-${t}`).style.display = t === tab ? 'block' : 'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  });
+  if (tab === 'sources' && state.sources.length === 0) loadSources();
+}
+
+// ── Briefings ────────────────────────────────────────────────────────────────
+
+async function loadBriefings() {
+  const el = document.getElementById('briefings-list');
+  try {
+    const files = await ghGet(`contents/${BRIEFINGS_DIR}`);
+    const mds = files
+      .filter(f => f.name.endsWith('.md'))
+      .sort((a, b) => b.name.localeCompare(a.name));
+
+    if (!mds.length) {
+      el.innerHTML = '<div class="empty">No briefings yet — run the pipeline first.</div>';
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="card-header">
+        <span>Past briefings</span>
+        <span class="count">${mds.length} available</span>
+      </div>
+      ${mds.map(f => `
+        <div class="briefing-row">
+          <span class="briefing-date">${fmtDate(f.name)}</span>
+          <button class="btn" data-path="${esc(f.path)}" data-name="${esc(f.name)}">Read</button>
+        </div>
+      `).join('')}
+    `;
+
+    el.addEventListener('click', e => {
+      const btn = e.target.closest('[data-path]');
+      if (btn) openBriefing(btn.dataset.path, btn.dataset.name);
+    });
+  } catch {
+    el.innerHTML = `
+      <div class="empty">
+        Briefings folder not found yet.<br>
+        <small>It will be created automatically after the first pipeline run.</small>
+      </div>`;
+  }
+}
+
+async function openBriefing(path, name) {
+  const viewer = document.getElementById('briefing-viewer');
+  viewer.style.display = 'block';
+  viewer.innerHTML = '<div class="loading">Loading…</div>';
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const data = await ghGet(`contents/${path}`);
+    const md = b64decode(data.content);
+    viewer.innerHTML = `
+      <div class="viewer-toolbar">
+        <span class="viewer-title">${fmtDate(name)}</span>
+        <button class="btn" id="close-viewer">Close</button>
+      </div>
+      <div id="briefing-body">${marked.parse(md)}</div>
+    `;
+    document.getElementById('close-viewer').onclick = () => {
+      viewer.style.display = 'none';
+    };
+  } catch (e) {
+    viewer.innerHTML = `<div class="empty">Failed to load: ${esc(e.message)}</div>`;
+  }
+}
+
+function fmtDate(filename) {
+  const m = filename.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return filename;
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+    .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+// ── Run trigger ──────────────────────────────────────────────────────────────
+
+async function triggerRun() {
+  const btn    = document.getElementById('run-btn');
+  const status = document.getElementById('run-status');
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+
+  try {
+    const r = await ghFetch(`actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: 'main' }),
+    });
+    if (r.status === 204) {
+      toast('Run started — check the Actions tab for progress.');
+      status.textContent = 'Triggered ✓';
+      setTimeout(() => { status.textContent = ''; }, 6000);
+    } else {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.message || `HTTP ${r.status}`);
+    }
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Run now';
+  }
+}
+
+// ── Sources ──────────────────────────────────────────────────────────────────
+
+async function loadSources() {
+  const el = document.getElementById('sources-list');
+  el.innerHTML = '<div class="loading">Loading sources…</div>';
+
+  try {
+    const data   = await ghGet(`contents/${SOURCES_PATH}`);
+    const parsed = jsyaml.load(b64decode(data.content));
+    state.sources    = (parsed.rss_feeds || []).map(s => ({ ...s }));
+    state.sourcesRaw = parsed;
+    state.sourcesSha = data.sha;
+    renderSources();
+  } catch (e) {
+    el.innerHTML = `<div class="empty">Failed to load sources: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderSources() {
+  const el = document.getElementById('sources-list');
+  const fb = state.feedback;
+
+  el.innerHTML = `
+    <div class="card-header">
+      <span>RSS feeds</span>
+      <span class="count">${state.sources.length} sources</span>
+    </div>
+    ${state.sources.map(s => {
+      const rating = fb[s.url]?.rating;
+      return `
+        <div class="source-row">
+          <div class="source-info">
+            <div class="source-name">${esc(s.name)}</div>
+            <div class="source-url">${esc(s.url)}</div>
+          </div>
+          ${rating ? `<span class="badge badge-${rating}">${rating}</span>` : ''}
+          <button class="flag-btn ${rating === 'good' ? 'active-good' : ''}"
+                  data-url="${esc(s.url)}" data-name="${esc(s.name)}" data-rating="good"
+                  title="Good source">👍</button>
+          <button class="flag-btn ${rating === 'bad' ? 'active-bad' : ''}"
+                  data-url="${esc(s.url)}" data-name="${esc(s.name)}" data-rating="bad"
+                  title="Poor source">👎</button>
+        </div>
+      `;
+    }).join('')}
+    <div class="add-source-panel">
+      <div class="label">Add a source</div>
+      <div class="row">
+        <input type="text" id="new-name" placeholder="Source name" />
+        <input type="url"  id="new-url"  placeholder="RSS feed URL" />
+        <button class="btn btn-primary" id="add-btn" onclick="addSource()">Add</button>
+      </div>
+      <p class="hint">Commits directly to <code>config/sources.yaml</code> on main — active on the next run.</p>
+    </div>
+  `;
+
+  // Event delegation for flag buttons
+  el.addEventListener('click', e => {
+    const btn = e.target.closest('.flag-btn');
+    if (btn) flagSource(btn.dataset.url, btn.dataset.name, btn.dataset.rating);
+  });
+}
+
+async function addSource() {
+  const name = document.getElementById('new-name').value.trim();
+  const url  = document.getElementById('new-url').value.trim();
+  if (!name || !url) { toast('Name and URL are required.', true); return; }
+
+  const btn = document.getElementById('add-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    // Always fetch fresh to get current sha
+    const fileData = await ghGet(`contents/${SOURCES_PATH}`);
+    const parsed   = jsyaml.load(b64decode(fileData.content));
+    parsed.rss_feeds = [...(parsed.rss_feeds || []), { name, url }];
+
+    const r = await ghFetch(`contents/${SOURCES_PATH}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `sources: add ${name}`,
+        content: b64encode(jsyaml.dump(parsed, { indent: 2, lineWidth: 120 })),
+        sha: fileData.sha,
+        branch: 'main',
+      }),
+    });
+
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.message || `HTTP ${r.status}`);
+    }
+
+    toast(`"${name}" added — active on the next run.`);
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-url').value  = '';
+    state.sources = [];
+    loadSources();
+  } catch (e) {
+    toast(`Failed to add source: ${e.message}`, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add';
+  }
+}
+
+// ── Feedback ─────────────────────────────────────────────────────────────────
+
+async function loadFeedback() {
+  try {
+    const data = await ghGet(`contents/${FEEDBACK_PATH}`);
+    state.feedback    = JSON.parse(b64decode(data.content));
+    state.feedbackSha = data.sha;
+  } catch {
+    // File doesn't exist yet — that's fine
+    state.feedback    = {};
+    state.feedbackSha = null;
+  }
+}
+
+async function flagSource(url, name, rating) {
+  const current   = state.feedback[url]?.rating;
+  const newRating = current === rating ? null : rating;  // toggle off if same
+
+  const updated = { ...state.feedback };
+  if (newRating) {
+    updated[url] = { name, rating: newRating, updated: new Date().toISOString().slice(0, 10) };
+  } else {
+    delete updated[url];
+  }
+
+  const body = {
+    message: newRating
+      ? `feedback: mark "${name}" as ${newRating}`
+      : `feedback: clear rating for "${name}"`,
+    content: b64encode(JSON.stringify(updated, null, 2) + '\n'),
+    branch: 'main',
+  };
+  if (state.feedbackSha) body.sha = state.feedbackSha;
+
+  try {
+    const r = await ghFetch(`contents/${FEEDBACK_PATH}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      const rb = await r.json().catch(() => ({}));
+      throw new Error(rb.message || `HTTP ${r.status}`);
+    }
+    const result      = await r.json();
+    state.feedback    = updated;
+    state.feedbackSha = result.content.sha;
+    renderSources();
+    toast(newRating ? `Marked as ${newRating}.` : 'Rating removed.');
+  } catch (e) {
+    toast(`Failed to save: ${e.message}`, true);
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+let _toastTimer;
+function toast(msg, isError = false) {
+  document.querySelector('.toast')?.remove();
+  const el = Object.assign(document.createElement('div'), { className: 'toast' + (isError ? ' error' : ''), textContent: msg });
+  document.body.appendChild(el);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.remove(), 3500);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+if (state.pat) {
+  showApp();
+} else {
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+</script>
+</body>
+</html>

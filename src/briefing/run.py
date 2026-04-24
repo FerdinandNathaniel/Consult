@@ -148,7 +148,7 @@ def main(dry_run: bool = False) -> None:
 
     # --- Write output ---
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    date_str = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%Y-%m-%d")
+    date_str = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%Y-%m-%d_%H%M")
     filename = f"briefing_{date_str}.md"
     output_path = OUTPUT_DIR / filename
 

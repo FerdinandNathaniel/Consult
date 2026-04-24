@@ -35,6 +35,7 @@ jobs:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           OUTPUT_DIR: outputs
           SERENDIPITY_N: "5"
+          INCLUDE_TIER3: "true"
         run: python -m src.briefing.run
 
       - name: Write Google service account credentials

@@ -353,6 +353,9 @@
     </div>
 
     <div id="pane-sources" style="display:none">
+      <div class="card" id="social-sources-list" style="margin-bottom:16px">
+        <div class="loading">Loading sources…</div>
+      </div>
       <div class="card" id="sources-list">
         <div class="loading">Loading sources…</div>
       </div>
@@ -383,6 +386,7 @@ const state = {
   feedback: {},
   feedbackSha: null,
   sources: [],
+  socialSources: [],
 };
 
 // ── Encoding helpers ─────────────────────────────────────────────────────────
@@ -585,19 +589,45 @@ async function triggerRun() {
 // ── Sources ──────────────────────────────────────────────────────────────────
 
 async function loadSources() {
-  const el = document.getElementById('sources-list');
-  el.innerHTML = '<div class="loading">Loading sources…</div>';
+  const socialEl = document.getElementById('social-sources-list');
+  const el       = document.getElementById('sources-list');
+  socialEl.innerHTML = '<div class="loading">Loading sources…</div>';
+  el.innerHTML       = '<div class="loading">Loading sources…</div>';
 
   try {
     const data   = await ghGet(`contents/${SOURCES_PATH}`);
     const parsed = jsyaml.load(b64decode(data.content));
-    state.sources    = (parsed.rss_feeds || []).map(s => ({ ...s }));
-    state.sourcesRaw = parsed;
-    state.sourcesSha = data.sha;
+    state.sources       = (parsed.rss_feeds || []).map(s => ({ ...s }));
+    state.socialSources = (parsed.social?.twitter_accounts || []).map(s => ({ ...s }));
+    state.sourcesRaw    = parsed;
+    state.sourcesSha    = data.sha;
+    renderSocialSources();
     renderSources();
   } catch (e) {
-    el.innerHTML = `<div class="empty">Failed to load sources: ${esc(e.message)}</div>`;
+    socialEl.innerHTML = `<div class="empty">Failed to load sources: ${esc(e.message)}</div>`;
+    el.innerHTML = '';
   }
+}
+
+function renderSocialSources() {
+  const el = document.getElementById('social-sources-list');
+  const accounts = state.socialSources;
+
+  el.innerHTML = `
+    <div class="card-header">
+      <span>Social media</span>
+      <span class="count">${accounts.length} accounts</span>
+    </div>
+    ${accounts.length === 0 ? '<div class="empty">No social accounts configured.</div>' :
+      accounts.map(a => `
+        <div class="source-row">
+          <div class="source-info">
+            <div class="source-name">${esc(a.name)} <span style="color:var(--muted);font-weight:400">@${esc(a.handle)}</span></div>
+            <div class="source-url">${esc(a.relevance_hint || '')}</div>
+          </div>
+        </div>
+      `).join('')}
+  `;
 }
 
 function renderSources() {
@@ -606,7 +636,7 @@ function renderSources() {
 
   el.innerHTML = `
     <div class="card-header">
-      <span>RSS feeds</span>
+      <span>Media & organisations</span>
       <span class="count">${state.sources.length} sources</span>
     </div>
     ${state.sources.map(s => {

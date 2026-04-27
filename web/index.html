@@ -209,16 +209,6 @@
     .briefing-inline-viewer code { background: var(--bg); padding: 2px 5px; border-radius: 3px; font-size: 12px; }
     .briefing-inline-viewer blockquote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--muted); margin: 10px 0; }
 
-    .viewer-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid var(--border);
-    }
-    .viewer-title { font-size: 15px; font-weight: 600; }
-
     /* ── Briefing rows ───────────────────────────────────── */
 
     .briefing-row {
@@ -280,11 +270,13 @@
     }
     .col-progress.active { background: var(--border); }
     .col-progress-bar {
+      display: none;
       height: 100%;
       width: 40%;
       background: var(--accent);
       animation: progress-slide 1.6s ease-in-out infinite;
     }
+    .col-progress.active .col-progress-bar { display: block; }
     @keyframes progress-slide {
       0%   { margin-left: -40%; }
       100% { margin-left: 100%; }
@@ -476,7 +468,6 @@
           <div class="card" id="roundups-list">
             <div class="loading">Loading round-ups…</div>
           </div>
-          <div id="roundup-viewer" class="content-viewer"></div>
         </div>
 
       </div>
@@ -799,19 +790,7 @@ async function openBriefing(path, name, viewer, btn) {
   try {
     const data = await ghGet(`contents/${path}`);
     const md = b64decode(data.content);
-    viewer.innerHTML = `
-      <div class="viewer-toolbar">
-        <span class="viewer-title">${fmtDate(name)}</span>
-        <button class="btn close-viewer-btn">Close</button>
-      </div>
-      <div class="briefing-body">${marked.parse(md)}</div>
-    `;
-    viewer.querySelector('.close-viewer-btn').onclick = () => {
-      viewer.style.display = 'none';
-      viewer.innerHTML = '';
-      row.classList.remove('is-active');
-      btn.textContent = 'Read';
-    };
+    viewer.innerHTML = `<div class="briefing-body">${marked.parse(md)}</div>`;
   } catch (e) {
     viewer.innerHTML = `<div class="empty">Failed to load: ${esc(e.message)}</div>`;
     row.classList.remove('is-active');
@@ -854,13 +833,30 @@ async function loadRoundups() {
             <span class="briefing-date">${fmtRoundup(name)}</span>
             <button class="btn" data-roundup-path="${esc(f.path)}" data-roundup-name="${esc(name)}">Read</button>
           </div>
+          <div class="briefing-inline-viewer" style="display:none"></div>
         `;
       }).join('')}
     `;
 
     el.onclick = e => {
       const btn = e.target.closest('[data-roundup-path]');
-      if (btn) openRoundup(btn.dataset.roundupPath, btn.dataset.roundupName);
+      if (!btn) return;
+
+      const row = btn.closest('.briefing-row');
+      const viewer = row.nextElementSibling;
+      const isSameOpen = viewer.style.display !== 'none';
+
+      el.querySelectorAll('.briefing-inline-viewer').forEach(v => { v.style.display = 'none'; v.innerHTML = ''; });
+      el.querySelectorAll('.briefing-row').forEach(r => r.classList.remove('is-active'));
+      el.querySelectorAll('[data-roundup-path]').forEach(b => { b.textContent = 'Read'; });
+
+      if (isSameOpen) {
+        return;
+      }
+
+      row.classList.add('is-active');
+      btn.textContent = 'Close';
+      openRoundup(btn.dataset.roundupPath, btn.dataset.roundupName, viewer, btn);
     };
   } catch {
     el.innerHTML = `
@@ -871,27 +867,20 @@ async function loadRoundups() {
   }
 }
 
-async function openRoundup(path, name) {
-  const viewer = document.getElementById('roundup-viewer');
+async function openRoundup(path, name, viewer, btn) {
+  const row = btn.closest('.briefing-row');
   viewer.style.display = 'block';
   viewer.innerHTML = '<div class="loading">Loading…</div>';
-  viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   try {
     const data = await ghGet(`contents/${path}`);
     const md = b64decode(data.content);
-    viewer.innerHTML = `
-      <div class="viewer-toolbar">
-        <span class="viewer-title">${fmtRoundup(name)}</span>
-        <button class="btn" id="close-roundup-viewer">Close</button>
-      </div>
-      <div>${marked.parse(md)}</div>
-    `;
-    document.getElementById('close-roundup-viewer').onclick = () => {
-      viewer.style.display = 'none';
-    };
+    viewer.innerHTML = `<div class="briefing-body">${marked.parse(md)}</div>`;
   } catch (e) {
     viewer.innerHTML = `<div class="empty">Failed to load: ${esc(e.message)}</div>`;
+    row.classList.remove('is-active');
+    btn.textContent = 'Read';
   }
 }
 

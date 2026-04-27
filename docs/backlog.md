@@ -195,7 +195,7 @@ Include relevant podcast episodes as a content source, either via episode summar
 
 ## Done
 
-- **Weekly round-up** — `src/briefing/weekly.py` reads the 7 most recent daily briefings, de-duplicates stories, and produces `roundups/roundup_YYYY-Www.md`; scheduled via `.github/workflows/weekly_roundup.yml` (Monday 05:00 UTC)
+- **Weekly round-up** — `src/briefing/weekly.py` reads the 7 most recent daily briefings, de-duplicates stories, and produces timestamped files like `roundups/roundup_YYYY-MM-DD_HHMM.md`; scheduled via `.github/workflows/weekly_roundup.yml` (Monday 05:00 UTC)
 - **Social "what are people talking about" section** — daily briefing now includes a `## Wat bespreken gevolgde accounts?` section (LLM-generated thematic summary of social posts); social posts are handled separately from news scoring; weekly round-up synthesises these into a weekly social view
 - **Twitter/X fetching** — self-hosted RSSHub on Railway; configured via `social.rsshub_instance` in `sources.yaml`
 - **GitHub Actions scheduling** — daily at 04:00 UTC (05:00 CET / 06:00 CEST); artifact retention 90 days

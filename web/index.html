@@ -896,10 +896,18 @@ async function openRoundup(path, name) {
 }
 
 function fmtRoundup(filename) {
-  // roundup_2026-W17.md → "Week 17, 2026"
-  const m = filename.match(/(\d{4})-W(\d{2})/);
-  if (!m) return filename.replace(/\.md$/, '');
-  return `Week ${+m[2]}, ${m[1]}`;
+  // roundup_2026-04-27_2030.md → "27 April 2026 — 20:30"
+  const dated = filename.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})/);
+  if (dated) {
+    const date = new Date(Date.UTC(+dated[1], +dated[2] - 1, +dated[3]))
+      .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    return `${date} — ${dated[4]}:${dated[5]}`;
+  }
+
+  // Backward compatibility: roundup_2026-W17.md → "Week 17, 2026"
+  const weekly = filename.match(/(\d{4})-W(\d{2})/);
+  if (!weekly) return filename.replace(/\.md$/, '');
+  return `Week ${+weekly[2]}, ${weekly[1]}`;
 }
 
 // ── Daily run trigger ────────────────────────────────────────────────────────

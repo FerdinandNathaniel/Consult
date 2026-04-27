@@ -144,6 +144,11 @@ def generate_weekly_roundup(briefing_texts: list[tuple[str, str]], profile: dict
     return response.choices[0].message.content.strip()
 
 
+def build_roundup_filename(now: datetime) -> str:
+    """Return a timestamped weekly roundup filename, mirroring daily briefing uniqueness."""
+    return f"roundup_{now:%Y-%m-%d_%H%M}.md"
+
+
 def main() -> None:
     logger.info("Starting weekly round-up")
 
@@ -162,8 +167,7 @@ def main() -> None:
 
     ROUNDUPS_DIR.mkdir(parents=True, exist_ok=True)
     now = datetime.now(ZoneInfo("Europe/Amsterdam"))
-    iso_year, iso_week, _ = now.isocalendar()
-    filename = f"roundup_{iso_year}-W{iso_week:02d}.md"
+    filename = build_roundup_filename(now)
     output_path = ROUNDUPS_DIR / filename
 
     output_path.write_text(weekly_md, encoding="utf-8")

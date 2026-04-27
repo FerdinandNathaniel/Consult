@@ -11,6 +11,7 @@ Other failures (network, rate-limit, etc.) are skipped silently.
 """
 
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 
 import feedparser
@@ -42,7 +43,10 @@ def fetch_social_articles(social_config: dict) -> tuple[list[Article], list[str]
     auth_failed_handles contains handles that returned HTTP 401/403, indicating
     the RSSHub OAuth token needs renewal.
     """
-    instance = social_config.get("rsshub_instance", "https://rsshub.app")
+    instance = (
+        os.environ.get("RSSHUB_INSTANCE")
+        or social_config.get("rsshub_instance", "https://rsshub.app")
+    )
     accounts = social_config.get("twitter_accounts", [])
     cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
     articles: list[Article] = []

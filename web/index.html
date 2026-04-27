@@ -91,29 +91,6 @@
 
     header h1 { font-size: 15px; font-weight: 600; flex: 1; }
 
-    #run-status { font-size: 12px; color: var(--muted); }
-    #run-btn { min-width: 90px; justify-content: center; }
-
-    /* ── Run progress ────────────────────────────────── */
-
-    #run-progress {
-      height: 3px;
-      background: transparent;
-      overflow: hidden;
-      display: none;
-    }
-    #run-progress.active { display: block; }
-    #run-progress-bar {
-      height: 100%;
-      width: 40%;
-      background: var(--accent);
-      animation: progress-slide 1.6s ease-in-out infinite;
-    }
-    @keyframes progress-slide {
-      0%   { margin-left: -40%; }
-      100% { margin-left: 100%; }
-    }
-
     nav {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -136,7 +113,7 @@
 
     main {
       padding: 24px;
-      max-width: 860px;
+      max-width: 1340px;
       margin: 0 auto;
     }
 
@@ -242,6 +219,98 @@
     }
     .viewer-title { font-size: 15px; font-weight: 600; }
 
+    /* ── Briefing rows ───────────────────────────────────── */
+
+    .briefing-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .briefing-row:last-child { border-bottom: none; }
+    .briefing-date { flex: 1; font-weight: 500; }
+
+    /* ── Two-column briefings layout ─────────────────────── */
+
+    .briefings-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .briefings-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .col-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .col-toolbar-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .col-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .col-run-status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .col-progress {
+      height: 2px;
+      background: transparent;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .col-progress.active { background: var(--border); }
+    .col-progress-bar {
+      height: 100%;
+      width: 40%;
+      background: var(--accent);
+      animation: progress-slide 1.6s ease-in-out infinite;
+    }
+    @keyframes progress-slide {
+      0%   { margin-left: -40%; }
+      100% { margin-left: 100%; }
+    }
+
+    /* ── Model picker ───────────────────────────────────── */
+
+    .model-picker {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .model-select {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 8px;
+      font-size: 13px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      max-width: 220px;
+    }
+    .model-cost {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
     /* ── Sources ─────────────────────────────────────────── */
 
     .source-row {
@@ -321,35 +390,13 @@
     .toast.error { background: var(--bad); }
     @keyframes slide-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── Model picker ───────────────────────────────────── */
-
-    .model-picker {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .model-select {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 4px 8px;
-      font-size: 13px;
-      background: var(--surface);
-      color: var(--text);
-      cursor: pointer;
-      max-width: 200px;
-    }
-    .model-cost {
-      font-size: 12px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    @media (max-width: 600px) {
+    @media (max-width: 860px) {
       main { padding: 16px; }
       header, nav { padding: 0 16px; }
       .briefing-inline-viewer { padding: 18px 12px; }
       .row { flex-direction: column; }
-      .model-select { max-width: 130px; }
+      .briefings-two-col { grid-template-columns: 1fr; }
+      .model-select { max-width: 150px; }
       .model-cost { display: none; }
     }
   </style>
@@ -376,16 +423,8 @@
 <div id="app-screen">
   <header>
     <h1>Briefing Dashboard</h1>
-    <span id="run-status"></span>
-    <div class="model-picker">
-      <select id="model-select" class="model-select" onchange="updateModelCost(); updateSaveDefaultBtn()"></select>
-      <button class="btn" id="save-default-btn" onclick="saveDefaultModel()" title="Save as default for all future runs, including scheduled ones">Save as default</button>
-      <span id="model-cost" class="model-cost"></span>
-    </div>
-    <button class="btn btn-green" id="run-btn" onclick="triggerRun()">▶ Run now</button>
     <button class="btn" onclick="logout()" style="font-size:12px;color:var(--muted)">Sign out</button>
   </header>
-  <div id="run-progress"><div id="run-progress-bar"></div></div>
 
   <nav>
     <button class="tab-btn active" id="tab-briefings" onclick="switchTab('briefings')">Briefings</button>
@@ -394,8 +433,50 @@
 
   <main>
     <div id="pane-briefings">
-      <div class="card" id="briefings-list">
-        <div class="loading">Loading briefings…</div>
+      <!-- Shared model controls -->
+      <div class="briefings-controls">
+        <div class="model-picker">
+          <select id="model-select" class="model-select" onchange="updateModelCost(); updateSaveDefaultBtn()"></select>
+          <button class="btn" id="save-default-btn" onclick="saveDefaultModel()" title="Save as default for all future runs, including scheduled ones">Save as default</button>
+          <span id="model-cost" class="model-cost"></span>
+        </div>
+      </div>
+
+      <!-- Two-column layout -->
+      <div class="briefings-two-col">
+
+        <!-- Left: Daily briefings -->
+        <div>
+          <div class="col-toolbar">
+            <span class="col-toolbar-title">Daily briefings</span>
+            <div class="col-toolbar-right">
+              <span id="daily-run-status" class="col-run-status"></span>
+              <button class="btn btn-green" id="daily-run-btn" onclick="triggerDailyRun()">&#9654; Generate</button>
+            </div>
+          </div>
+          <div id="daily-run-progress" class="col-progress"><div class="col-progress-bar"></div></div>
+          <div class="card" id="briefings-list">
+            <div class="loading">Loading briefings…</div>
+          </div>
+          <div id="briefing-viewer" class="content-viewer"></div>
+        </div>
+
+        <!-- Right: Weekly round-ups -->
+        <div>
+          <div class="col-toolbar">
+            <span class="col-toolbar-title">Weekly round-ups</span>
+            <div class="col-toolbar-right">
+              <span id="weekly-run-status" class="col-run-status"></span>
+              <button class="btn btn-green" id="weekly-run-btn" onclick="triggerWeeklyRun()">&#9654; Generate</button>
+            </div>
+          </div>
+          <div id="weekly-run-progress" class="col-progress"><div class="col-progress-bar"></div></div>
+          <div class="card" id="roundups-list">
+            <div class="loading">Loading round-ups…</div>
+          </div>
+          <div id="roundup-viewer" class="content-viewer"></div>
+        </div>
+
       </div>
     </div>
 
@@ -419,33 +500,28 @@
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const OWNER          = 'FerdinandNathaniel';
-const REPO           = 'Consult';
-const WORKFLOW_FILE  = 'daily_briefing.yml';
-const SOURCES_PATH   = 'config/sources.yaml';
-const FEEDBACK_PATH  = 'data/source_feedback.json';
-const BRIEFINGS_DIR  = 'briefings';
-const DEFAULT_BRANCH = 'main';
+const OWNER               = 'FerdinandNathaniel';
+const REPO                = 'Consult';
+const DAILY_WORKFLOW_FILE = 'daily_briefing.yml';
+const WEEKLY_WORKFLOW_FILE= 'weekly_roundup.yml';
+const SOURCES_PATH        = 'config/sources.yaml';
+const FEEDBACK_PATH       = 'data/source_feedback.json';
+const BRIEFINGS_DIR       = 'briefings';
+const ROUNDUPS_DIR        = 'roundups';
+const DEFAULT_BRANCH      = 'main';
 
 // ── Model catalogue ──────────────────────────────────────────────────────────
-// Prices in USD per million tokens (input / output). Estimates as of mid-2025
-// via OpenRouter; actual costs vary with caching and context length.
 
 const MODELS = [
-  // Anthropic — OpenRouter uses period notation for the minor version (e.g. 4.6, not 4-6)
   { id: 'anthropic/claude-sonnet-4.6',          label: 'Claude Sonnet 4.6',       costIn: 3,     costOut: 15,   isDefault: true },
   { id: 'anthropic/claude-haiku-4.5',           label: 'Claude Haiku 4.5',        costIn: 0.25,  costOut: 1.25  },
-  // Qwen
   { id: 'qwen/qwen3.6-plus',                    label: 'Qwen3.6 Plus',            costIn: 0.325, costOut: 1.95  },
-  // Google
   { id: 'google/gemma-4-31b-it',                label: 'Gemma 4 31B',             costIn: 0.13,  costOut: 0.38  },
-  // DeepSeek
   { id: 'deepseek/deepseek-v3.2',               label: 'DeepSeek V3.2',           costIn: 0.25,  costOut: 0.38  },
 ];
 
-// Rough token usage per full briefing run (article scoring + summary)
-const EST_IN_K  = 15;   // ~15k input tokens
-const EST_OUT_K = 1.5;  // ~1.5k output tokens
+const EST_IN_K  = 15;
+const EST_OUT_K = 1.5;
 
 function estimateCost(m) {
   const c = (m.costIn * EST_IN_K + m.costOut * EST_OUT_K) / 1000;
@@ -488,7 +564,6 @@ async function loadDefaultModel() {
     const data = await ghGet('actions/variables/OPENROUTER_MODEL');
     _currentDefaultModel = data.value;
     const sel = document.getElementById('model-select');
-    // If the saved value matches a known option, select it; otherwise add it
     if ([...sel.options].some(o => o.value === _currentDefaultModel)) {
       sel.value = _currentDefaultModel;
     } else if (_currentDefaultModel) {
@@ -501,7 +576,6 @@ async function loadDefaultModel() {
     updateModelCost();
     updateSaveDefaultBtn();
   } catch {
-    // Variable not set yet — leave the hardcoded default selected
     updateSaveDefaultBtn();
   }
 }
@@ -513,7 +587,6 @@ async function saveDefaultModel() {
   btn.textContent = 'Saving…';
 
   try {
-    // Try PATCH (update existing variable); fall back to POST (create new)
     let r = await ghFetch('actions/variables/OPENROUTER_MODEL', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -557,7 +630,6 @@ const state = {
 // ── Encoding helpers ─────────────────────────────────────────────────────────
 
 function b64decode(str) {
-  // GitHub API returns base64 with newlines; handle UTF-8 correctly
   const binary = atob(str.replace(/\s/g, ''));
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -742,28 +814,104 @@ function fmtDate(filename) {
   return m[4] ? `${date} — ${m[4]}:${m[5]}` : date;
 }
 
-// ── Run trigger ──────────────────────────────────────────────────────────────
+// ── Round-ups ────────────────────────────────────────────────────────────────
 
-async function triggerRun() {
-  const btn = document.getElementById('run-btn');
+async function loadRoundups() {
+  const el = document.getElementById('roundups-list');
+  try {
+    const { tree } = await ghGet(`git/trees/${DEFAULT_BRANCH}?recursive=1`);
+    const mds = tree
+      .filter(f => f.type === 'blob' && f.path.startsWith(ROUNDUPS_DIR + '/') && f.path.endsWith('.md'))
+      .sort((a, b) => b.path.localeCompare(a.path));
+
+    if (!mds.length) {
+      el.innerHTML = '<div class="empty">No round-ups yet — runs automatically on Sunday.</div>';
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="card-header">
+        <span>Past round-ups</span>
+        <span class="count">${mds.length} available</span>
+      </div>
+      ${mds.map(f => {
+        const name = f.path.split('/').pop();
+        return `
+          <div class="briefing-row">
+            <span class="briefing-date">${fmtRoundup(name)}</span>
+            <button class="btn" data-roundup-path="${esc(f.path)}" data-roundup-name="${esc(name)}">Read</button>
+          </div>
+        `;
+      }).join('')}
+    `;
+
+    el.onclick = e => {
+      const btn = e.target.closest('[data-roundup-path]');
+      if (btn) openRoundup(btn.dataset.roundupPath, btn.dataset.roundupName);
+    };
+  } catch {
+    el.innerHTML = `
+      <div class="empty">
+        Round-ups folder not found yet.<br>
+        <small>It will be created after the first weekly run.</small>
+      </div>`;
+  }
+}
+
+async function openRoundup(path, name) {
+  const viewer = document.getElementById('roundup-viewer');
+  viewer.style.display = 'block';
+  viewer.innerHTML = '<div class="loading">Loading…</div>';
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const data = await ghGet(`contents/${path}`);
+    const md = b64decode(data.content);
+    viewer.innerHTML = `
+      <div class="viewer-toolbar">
+        <span class="viewer-title">${fmtRoundup(name)}</span>
+        <button class="btn" id="close-roundup-viewer">Close</button>
+      </div>
+      <div>${marked.parse(md)}</div>
+    `;
+    document.getElementById('close-roundup-viewer').onclick = () => {
+      viewer.style.display = 'none';
+    };
+  } catch (e) {
+    viewer.innerHTML = `<div class="empty">Failed to load: ${esc(e.message)}</div>`;
+  }
+}
+
+function fmtRoundup(filename) {
+  // roundup_2026-W17.md → "Week 17, 2026"
+  const m = filename.match(/(\d{4})-W(\d{2})/);
+  if (!m) return filename.replace(/\.md$/, '');
+  return `Week ${+m[2]}, ${m[1]}`;
+}
+
+// ── Daily run trigger ────────────────────────────────────────────────────────
+
+async function triggerDailyRun() {
+  const btn = document.getElementById('daily-run-btn');
   btn.disabled = true;
   btn.textContent = 'Starting…';
 
   try {
     const before = new Date();
     before.setSeconds(before.getSeconds() - 10);
-    _runDispatchedAt = before.toISOString();
+    _dailyDispatchedAt = before.toISOString();
 
     const model = document.getElementById('model-select').value;
-    const r = await ghFetch(`actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+    const r = await ghFetch(`actions/workflows/${DAILY_WORKFLOW_FILE}/dispatches`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ref: 'main', inputs: { model } }),
     });
     if (r.status === 204) {
       btn.textContent = 'Running…';
-      showRunProgress();
-      _pollTimer = setTimeout(pollRunStatus, 8000);
+      showColProgress('daily');
+      document.getElementById('daily-run-status').textContent = 'In progress…';
+      _dailyPollTimer = setTimeout(pollDailyStatus, 8000);
     } else {
       const body = await r.json().catch(() => ({}));
       throw new Error(body.message || `HTTP ${r.status}`);
@@ -771,7 +919,7 @@ async function triggerRun() {
   } catch (e) {
     toast(e.message, true);
     btn.disabled = false;
-    btn.textContent = '▶ Run now';
+    btn.textContent = '▶ Generate';
   }
 }
 
@@ -781,15 +929,38 @@ function showRunProgress() {
   document.getElementById('run-status').textContent = 'In progress…';
 }
 
-function hideRunProgress(statusText) {
-  clearTimeout(_pollTimer);
-  document.getElementById('run-progress').classList.remove('active');
-  const btn = document.getElementById('run-btn');
-  btn.disabled = false;
-  btn.textContent = '▶ Run now';
-  const statusEl = document.getElementById('run-status');
-  statusEl.textContent = statusText || '';
-  if (statusText) setTimeout(() => { statusEl.textContent = ''; }, 6000);
+// ── Weekly run trigger ───────────────────────────────────────────────────────
+
+async function triggerWeeklyRun() {
+  const btn = document.getElementById('weekly-run-btn');
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+
+  try {
+    const before = new Date();
+    before.setSeconds(before.getSeconds() - 10);
+    _weeklyDispatchedAt = before.toISOString();
+
+    const model = document.getElementById('model-select').value;
+    const r = await ghFetch(`actions/workflows/${WEEKLY_WORKFLOW_FILE}/dispatches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: 'main', inputs: { model } }),
+    });
+    if (r.status === 204) {
+      btn.textContent = 'Running…';
+      showColProgress('weekly');
+      document.getElementById('weekly-run-status').textContent = 'In progress…';
+      _weeklyPollTimer = setTimeout(pollWeeklyStatus, 8000);
+    } else {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.message || `HTTP ${r.status}`);
+    }
+  } catch (e) {
+    toast(e.message, true);
+    btn.disabled = false;
+    btn.textContent = '▶ Generate';
+  }
 }
 
 async function pollRunStatus() {
@@ -798,24 +969,24 @@ async function pollRunStatus() {
     return;
   }
   try {
-    const data = await ghGet(`actions/workflows/${WORKFLOW_FILE}/runs?per_page=10`);
-    const run = data.workflow_runs?.find(r => r.created_at >= _runDispatchedAt);
+    const data = await ghGet(`actions/workflows/${WEEKLY_WORKFLOW_FILE}/runs?per_page=10`);
+    const run = data.workflow_runs?.find(r => r.created_at >= _weeklyDispatchedAt);
 
     if (!run || run.status !== 'completed') {
-      _pollTimer = setTimeout(pollRunStatus, 15000);
+      _weeklyPollTimer = setTimeout(pollWeeklyStatus, 15000);
       return;
     }
 
     if (run.conclusion === 'success') {
-      hideRunProgress('Completed ✓');
-      toast('Briefing ready — refreshing list…');
-      await loadBriefings();
+      hideColProgress('weekly', 'Completed ✓');
+      toast('Round-up ready — refreshing list…');
+      await loadRoundups();
     } else {
-      hideRunProgress(`Finished (${run.conclusion})`);
+      hideColProgress('weekly', `Finished (${run.conclusion})`);
       toast(`Run ${run.conclusion} — check the Actions tab.`, true);
     }
   } catch {
-    _pollTimer = setTimeout(pollRunStatus, 20000);
+    _weeklyPollTimer = setTimeout(pollWeeklyStatus, 20000);
   }
 }
 
@@ -916,7 +1087,6 @@ function renderSources() {
     </div>
   `;
 
-  // Event delegation for flag buttons
   el.addEventListener('click', e => {
     const btn = e.target.closest('.flag-btn');
     if (btn) flagSource(btn.dataset.url, btn.dataset.name, btn.dataset.rating);
@@ -933,7 +1103,6 @@ async function addSource() {
   btn.textContent = 'Saving…';
 
   try {
-    // Always fetch fresh to get current sha
     const fileData = await ghGet(`contents/${SOURCES_PATH}`);
     const parsed   = jsyaml.load(b64decode(fileData.content));
     parsed.rss_feeds = [...(parsed.rss_feeds || []), { name, url }];
@@ -975,7 +1144,6 @@ async function loadFeedback() {
     state.feedback    = JSON.parse(b64decode(data.content));
     state.feedbackSha = data.sha;
   } catch {
-    // File doesn't exist yet — that's fine
     state.feedback    = {};
     state.feedbackSha = null;
   }
@@ -983,7 +1151,7 @@ async function loadFeedback() {
 
 async function flagSource(url, name, rating) {
   const current   = state.feedback[url]?.rating;
-  const newRating = current === rating ? null : rating;  // toggle off if same
+  const newRating = current === rating ? null : rating;
 
   const updated = { ...state.feedback };
   if (newRating) {

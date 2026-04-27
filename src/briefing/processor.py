@@ -162,7 +162,7 @@ def generate_social_summary(social_articles: list[Article], profile: dict) -> st
             You are summarizing what AI/policy/tech experts are discussing on social media.
             The reader is a senior policy analyst at {report['perspective']},
             writing a report on: "{report['title_en']}"
-            Write concisely in Dutch. Use markdown formatting.
+            Write concisely in English. Use markdown formatting.
         """)
 
         user_msg = dedent(f"""\
@@ -170,7 +170,7 @@ def generate_social_summary(social_articles: list[Article], profile: dict) -> st
 
             Identify 2-4 themes or discussions these experts are engaging with.
             For each theme:
-            - Write a 1-2 sentence description in Dutch of what's being discussed
+            - Write a 1-2 sentence description in English of what's being discussed
             - Name the specific people contributing, linking their name to the post: [Name](url)
             - Skip purely personal content or posts with no policy/economic angle
 

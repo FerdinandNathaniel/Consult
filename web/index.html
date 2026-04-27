@@ -226,8 +226,10 @@
       align-items: center;
       padding: 11px 16px;
       border-bottom: 1px solid var(--border);
+      transition: background-color .15s ease;
     }
     .briefing-row:last-child { border-bottom: none; }
+    .briefing-row.is-active { background: #eef6ff; }
     .briefing-date { flex: 1; font-weight: 500; }
 
     /* ── Two-column briefings layout ─────────────────────── */
@@ -768,11 +770,14 @@ async function loadBriefings() {
       if (viewer.style.display !== 'none') {
         viewer.style.display = 'none';
         viewer.innerHTML = '';
+        row.classList.remove('is-active');
         btn.textContent = 'Read';
         return;
       }
       el.querySelectorAll('.briefing-inline-viewer').forEach(v => { v.style.display = 'none'; v.innerHTML = ''; });
+      el.querySelectorAll('.briefing-row').forEach(r => r.classList.remove('is-active'));
       el.querySelectorAll('.briefing-row [data-path]').forEach(b => { if (b !== btn) b.textContent = 'Read'; });
+      row.classList.add('is-active');
       openBriefing(btn.dataset.path, btn.dataset.name, viewer, btn);
     };
   } catch {
@@ -785,6 +790,7 @@ async function loadBriefings() {
 }
 
 async function openBriefing(path, name, viewer, btn) {
+  const row = btn.closest('.briefing-row');
   viewer.style.display = 'block';
   viewer.innerHTML = '<div class="loading">Loading…</div>';
   btn.textContent = 'Close';
@@ -803,10 +809,12 @@ async function openBriefing(path, name, viewer, btn) {
     viewer.querySelector('.close-viewer-btn').onclick = () => {
       viewer.style.display = 'none';
       viewer.innerHTML = '';
+      row.classList.remove('is-active');
       btn.textContent = 'Read';
     };
   } catch (e) {
     viewer.innerHTML = `<div class="empty">Failed to load: ${esc(e.message)}</div>`;
+    row.classList.remove('is-active');
     btn.textContent = 'Read';
   }
 }

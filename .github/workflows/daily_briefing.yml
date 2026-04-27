@@ -36,6 +36,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ github.event.inputs.model || vars.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4-6' }}
+          RSSHUB_INSTANCE: ${{ secrets.RSSHUB_INSTANCE }}
           OUTPUT_DIR: outputs
           SERENDIPITY_N: "5"
           INCLUDE_TIER3: "true"

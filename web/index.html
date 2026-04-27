@@ -664,6 +664,47 @@ async function ghGet(path) {
   return r.json();
 }
 
+function formatRunStepStatus(stepName, runStatus) {
+  if (runStatus === 'queued') return 'Queued…';
+  if (!stepName) return 'In progress…';
+
+  const labels = {
+    'Checkout repository': 'Checking out repository…',
+    'Set up Python': 'Setting up Python…',
+    'Install dependencies': 'Installing Python dependencies…',
+    'Run briefing': 'Retrieving news, scoring articles, and summarising results…',
+    'Commit briefing to repository': 'Saving briefing to repository…',
+    'Upload briefing as workflow artifact': 'Uploading briefing artifact…',
+    'Run weekly round-up': 'Reading saved briefings and summarising the week…',
+    'Commit round-up to repository': 'Saving round-up to repository…',
+    'Upload round-up as workflow artifact': 'Uploading round-up artifact…',
+  };
+
+  return labels[stepName] || `Working: ${stepName}…`;
+}
+
+async function getRunProgressStatus(run) {
+  if (!run) return 'Queued…';
+  if (run.status === 'queued') return 'Queued…';
+
+  try {
+    const data = await ghGet(`actions/runs/${run.id}/jobs?per_page=20`);
+    const jobs = data.jobs || [];
+    const activeJob = jobs.find(job => job.status !== 'completed') || jobs[0];
+    const steps = activeJob?.steps || [];
+    const activeStep = steps.find(step => step.status === 'in_progress')
+      || steps.find(step => step.status === 'queued')
+      || steps.filter(step => step.conclusion === 'success').at(-1);
+    return formatRunStepStatus(activeStep?.name, run.status);
+  } catch {
+    return run.status === 'queued' ? 'Queued…' : 'In progress…';
+  }
+}
+
+async function updateRunStatus(col, run) {
+  document.getElementById(`${col}-run-status`).textContent = await getRunProgressStatus(run);
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 async function saveToken() {
@@ -920,7 +961,7 @@ async function triggerDailyRun() {
     if (r.status === 204) {
       btn.textContent = 'Running…';
       showColProgress('daily');
-      document.getElementById('daily-run-status').textContent = 'In progress…';
+      document.getElementById('daily-run-status').textContent = 'Queued…';
       _dailyPollTimer = setTimeout(pollDailyStatus, 8000);
     } else {
       const body = await r.json().catch(() => ({}));
@@ -988,7 +1029,7 @@ async function triggerWeeklyRun() {
     if (r.status === 204) {
       btn.textContent = 'Running…';
       showColProgress('weekly');
-      document.getElementById('weekly-run-status').textContent = 'In progress…';
+      document.getElementById('weekly-run-status').textContent = 'Queued…';
       _weeklyPollTimer = setTimeout(pollWeeklyStatus, 8000);
     } else {
       const body = await r.json().catch(() => ({}));
@@ -1011,6 +1052,7 @@ async function pollWeeklyStatus() {
     const run = data.workflow_runs?.find(r => r.created_at >= _weeklyDispatchedAt);
 
     if (!run || run.status !== 'completed') {
+      await updateRunStatus('weekly', run);
       _weeklyPollTimer = setTimeout(pollWeeklyStatus, 15000);
       return;
     }
@@ -1038,6 +1080,7 @@ async function pollDailyStatus() {
     const run = data.workflow_runs?.find(r => r.created_at >= _dailyDispatchedAt);
 
     if (!run || run.status !== 'completed') {
+      await updateRunStatus('daily', run);
       _dailyPollTimer = setTimeout(pollDailyStatus, 15000);
       return;
     }
@@ -1083,7 +1126,7 @@ async function checkActiveRun() {
       before.setSeconds(before.getSeconds() - 5);
       setDispatchedAt(before.toISOString());
       showColProgress(col);
-      document.getElementById(`${col}-run-status`).textContent = 'In progress…';
+      await updateRunStatus(col, run);
       setTimer(setTimeout(poll, 8000));
     } catch {
       // No access or no runs yet — leave this column idle

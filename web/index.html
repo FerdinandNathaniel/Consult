@@ -270,11 +270,13 @@
     }
     .col-progress.active { background: var(--border); }
     .col-progress-bar {
+      display: none;
       height: 100%;
       width: 40%;
       background: var(--accent);
       animation: progress-slide 1.6s ease-in-out infinite;
     }
+    .col-progress.active .col-progress-bar { display: block; }
     @keyframes progress-slide {
       0%   { margin-left: -40%; }
       100% { margin-left: 100%; }

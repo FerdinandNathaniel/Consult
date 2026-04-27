@@ -112,6 +112,14 @@ def generate_weekly_roundup(briefing_texts: list[tuple[str, str]], profile: dict
         For each claim or development you mention, link to the specific article(s) that support it
         using inline markdown links, e.g. "The EU published new AI liability rules ([source](url))."
 
+                ## What Were Followed Accounts Discussing This Week?
+                Pull the "What Are Followed Accounts Discussing?" sections from each daily briefing
+                and synthesise a weekly view: which themes recurred, what evolved across the week.
+                For every concrete development, policy move, funding event, company update, or other
+                factual claim you mention in this section, include inline markdown links to the relevant
+                article URL(s) from the earlier daily briefings that support it.
+                If no social sections were present in any briefing, omit this section entirely.
+
         ## Most Relevant Items
         List all Tier 1 and notable Tier 2 articles, de-duplicated:
         - Group items that cover the same event or topic into one entry
@@ -119,14 +127,6 @@ def generate_weekly_roundup(briefing_texts: list[tuple[str, str]], profile: dict
           using short date labels like "Mon 27 Apr" or "Tue 28 Apr", and include the original URL(s)
           as markdown links
         - Sort by relevance: most important first
-
-        ## What Were Followed Accounts Discussing This Week?
-        Pull the "What Are Followed Accounts Discussing?" sections from each daily briefing
-        and synthesise a weekly view: which themes recurred, what evolved across the week.
-        For every concrete development, policy move, funding event, company update, or other
-        factual claim you mention in this section, include inline markdown links to the relevant
-        article URL(s) from the earlier daily briefings that support it.
-        If no social sections were present in any briefing, omit this section entirely.
 
         ---
         *[N] unique items · [N] daily briefings*

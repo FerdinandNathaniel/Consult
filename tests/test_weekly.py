@@ -42,3 +42,5 @@ def test_generate_weekly_roundup_requires_links_in_social_section():
     assert "What Were Followed Accounts Discussing This Week?" in user_prompt
     assert "inline markdown links" in user_prompt
     assert "earlier daily briefings" in user_prompt
+    assert user_prompt.index("## Summary of the Week") < user_prompt.index("## What Were Followed Accounts Discussing This Week?")
+    assert user_prompt.index("## What Were Followed Accounts Discussing This Week?") < user_prompt.index("## Most Relevant Items")

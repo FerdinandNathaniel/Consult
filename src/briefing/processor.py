@@ -142,6 +142,62 @@ def score_articles(articles: list[Article], profile: dict) -> tuple[list[Article
         return articles, False
 
 
+def generate_social_summary(social_articles: list[Article], profile: dict) -> str:
+    """Generate a thematic summary of what followed social accounts are discussing."""
+    if not social_articles:
+        return ""
+
+    try:
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+        client = _build_client()
+        report = profile["report"]
+
+        posts_text = "\n".join(
+            f"- [{a.source_name}]({a.url}) ({a.published.strftime('%H:%M')}): "
+            f"{a.summary or a.title}"
+            for a in sorted(social_articles, key=lambda x: x.published, reverse=True)
+        )
+
+        system_msg = dedent(f"""\
+            You are summarizing what AI/policy/tech experts are discussing on social media.
+            The reader is a senior policy analyst at {report['perspective']},
+            writing a report on: "{report['title_en']}"
+            Write concisely in Dutch. Use markdown formatting.
+        """)
+
+        user_msg = dedent(f"""\
+            Below are posts from the past 24 hours by AI, policy, and tech experts.
+
+            Identify 2-4 themes or discussions these experts are engaging with.
+            For each theme:
+            - Write a 1-2 sentence description in Dutch of what's being discussed
+            - Name the specific people contributing, linking their name to the post: [Name](url)
+            - Skip purely personal content or posts with no policy/economic angle
+
+            Focus on themes relevant to AI policy, EU regulation, startup ecosystems,
+            or central bank/economic perspectives. If fewer than 2 meaningful themes exist,
+            write one short paragraph.
+
+            Do not include a header — just the content.
+
+            Posts:
+            {posts_text}
+        """)
+
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"Social summary generation failed: {e}")
+        return ""
+
+
 def generate_executive_summary(articles: list[Article], profile: dict) -> str:
     """Generate a 3–5 sentence executive summary for Tier 1 articles."""
     tier1 = [a for a in articles if a.tier == 1]

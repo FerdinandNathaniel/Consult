@@ -36,37 +36,37 @@ def format_briefing(
 
     date_str = generated_at.strftime("%-d %B %Y")
     time_str = generated_at.strftime("%H:%M CET")
-    report_title = profile["report"]["title"]
+    report_title = profile["report"]["title_en"]
 
     lines: list[str] = []
 
     # Header
     lines += [
-        f"# Dagelijkse Briefing — {date_str}",
-        f"*Gegenereerd om {time_str} | Rapport: {report_title}*",
+        f"# Daily Briefing — {date_str}",
+        f"*Generated at {time_str} | Report: {report_title}*",
         "",
     ]
 
     # Warnings
     if not scoring_ok:
         lines += [
-            "> ⚠️ **LLM-scoring mislukt** — artikelen zijn niet op relevantie gescoord. "
-            "Controleer of `OPENROUTER_API_KEY` correct is ingesteld als GitHub-secret "
-            "en of het model beschikbaar is via OpenRouter.",
+            "> ⚠️ **LLM scoring failed** — articles were not scored for relevance. "
+            "Check that `OPENROUTER_API_KEY` is set correctly as a GitHub secret "
+            "and that the model is available via OpenRouter.",
             "",
         ]
     if social_auth_failures:
         handles_str = ", ".join(f"@{h}" for h in social_auth_failures)
         lines += [
-            f"> ⚠️ **Social media feeds niet geladen** ({handles_str}) — "
-            "het RSSHub-toegangstoken moet worden vernieuwd.",
+            f"> ⚠️ **Social media feeds failed to load** ({handles_str}) — "
+            "the RSSHub access token needs to be renewed.",
             "",
         ]
 
     # Executive summary
     if executive_summary:
         lines += [
-            "## Samenvatting",
+            "## Summary",
             "",
             executive_summary,
             "",
@@ -75,7 +75,7 @@ def format_briefing(
     # Social section
     if social_summary:
         lines += [
-            "## Wat bespreken gevolgde accounts?",
+            "## What Are Followed Accounts Discussing?",
             "",
             social_summary,
             "",
@@ -109,15 +109,15 @@ def format_briefing(
     tier3 = [a for a in articles if a.tier == 3]
     shown = [a for a in articles if a.tier in tiers_to_show]
 
-    footer_parts = [f"{len(shown)} items · {_count_sources(shown)} bronnen"]
+    footer_parts = [f"{len(shown)} items · {_count_sources(shown)} sources"]
     if excluded:
-        footer_parts.append(f"{len(excluded)} uitgesloten (Tier 0 · niet relevant)")
+        footer_parts.append(f"{len(excluded)} excluded (Tier 0 · not relevant)")
     if tier3 and not include_tier3:
-        footer_parts.append(f"{len(tier3)} laag signaal verborgen (stel INCLUDE_TIER3=true in om te tonen)")
+        footer_parts.append(f"{len(tier3)} low signal hidden (set INCLUDE_TIER3=true to show)")
     if serendipity_names:
-        footer_parts.append(f"Serendipity bronnen vandaag: {', '.join(serendipity_names)}")
+        footer_parts.append(f"Serendipity sources today: {', '.join(serendipity_names)}")
     if iterations_used > 1:
-        footer_parts.append(f"Kwaliteitscheck: {iterations_used} iteraties uitgevoerd")
+        footer_parts.append(f"Quality check: {iterations_used} iterations")
 
     lines += [
         "---",

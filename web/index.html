@@ -182,27 +182,32 @@
 
     .error-msg { color: var(--bad); font-size: 13px; margin-top: 8px; }
 
-    /* ── Briefing viewer ─────────────────────────────────── */
+    /* ── Briefings ───────────────────────────────────────── */
 
-    .content-viewer {
-      margin-top: 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 32px;
-      display: none;
+    .briefing-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px;
+    }
+    .briefing-row ~ .briefing-row { border-top: 1px solid var(--border); }
+    .briefing-inline-viewer + .briefing-row { border-top: 1px solid var(--border); }
+    .briefing-date { flex: 1; font-weight: 500; }
+
+    .briefing-inline-viewer {
+      padding: 20px 16px;
+      border-top: 1px solid var(--border);
     }
 
-    .content-viewer h1 { font-size: 18px; margin: 18px 0 6px; }
-    .content-viewer h2 { font-size: 15px; margin: 16px 0 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
-    .content-viewer h3 { font-size: 13px; font-weight: 600; margin: 14px 0 4px; }
-    .content-viewer p { margin-bottom: 10px; }
-    .content-viewer ul, .content-viewer ol { padding-left: 20px; margin-bottom: 10px; }
-    .content-viewer li { margin-bottom: 3px; }
-    .content-viewer a { color: var(--accent); }
-    .content-viewer hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
-    .content-viewer code { background: var(--bg); padding: 2px 5px; border-radius: 3px; font-size: 12px; }
-    .content-viewer blockquote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--muted); margin: 10px 0; }
+    .briefing-inline-viewer h1 { font-size: 18px; margin: 18px 0 6px; }
+    .briefing-inline-viewer h2 { font-size: 15px; margin: 16px 0 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+    .briefing-inline-viewer h3 { font-size: 13px; font-weight: 600; margin: 14px 0 4px; }
+    .briefing-inline-viewer p { margin-bottom: 10px; }
+    .briefing-inline-viewer ul, .briefing-inline-viewer ol { padding-left: 20px; margin-bottom: 10px; }
+    .briefing-inline-viewer li { margin-bottom: 3px; }
+    .briefing-inline-viewer a { color: var(--accent); }
+    .briefing-inline-viewer hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+    .briefing-inline-viewer code { background: var(--bg); padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+    .briefing-inline-viewer blockquote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--muted); margin: 10px 0; }
 
     .viewer-toolbar {
       display: flex;
@@ -388,7 +393,7 @@
     @media (max-width: 860px) {
       main { padding: 16px; }
       header, nav { padding: 0 16px; }
-      .content-viewer { padding: 18px; }
+      .briefing-inline-viewer { padding: 18px 12px; }
       .row { flex-direction: column; }
       .briefings-two-col { grid-template-columns: 1fr; }
       .model-select { max-width: 150px; }
@@ -610,10 +615,9 @@ async function saveDefaultModel() {
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-let _dailyDispatchedAt = null;
-let _weeklyDispatchedAt = null;
-let _dailyPollTimer = null;
-let _weeklyPollTimer = null;
+let _runDispatchedAt = null;
+let _pollTimer = null;
+let _pollStartedAt = null;
 
 const state = {
   pat: localStorage.getItem('gh_pat') || '',
@@ -705,10 +709,8 @@ function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   initModelSelect();
-  loadFeedback().then(() => {
-    loadBriefings();
-    loadRoundups();
-  });
+  loadFeedback().then(loadBriefings);
+  checkActiveRun();
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
@@ -748,13 +750,25 @@ async function loadBriefings() {
             <span class="briefing-date">${fmtDate(name)}</span>
             <button class="btn" data-path="${esc(f.path)}" data-name="${esc(name)}">Read</button>
           </div>
+          <div class="briefing-inline-viewer" style="display:none"></div>
         `;
       }).join('')}
     `;
 
     el.onclick = e => {
       const btn = e.target.closest('[data-path]');
-      if (btn) openBriefing(btn.dataset.path, btn.dataset.name);
+      if (!btn) return;
+      const row = btn.closest('.briefing-row');
+      const viewer = row.nextElementSibling;
+      if (viewer.style.display !== 'none') {
+        viewer.style.display = 'none';
+        viewer.innerHTML = '';
+        btn.textContent = 'Read';
+        return;
+      }
+      el.querySelectorAll('.briefing-inline-viewer').forEach(v => { v.style.display = 'none'; v.innerHTML = ''; });
+      el.querySelectorAll('.briefing-row [data-path]').forEach(b => { if (b !== btn) b.textContent = 'Read'; });
+      openBriefing(btn.dataset.path, btn.dataset.name, viewer, btn);
     };
   } catch {
     el.innerHTML = `
@@ -765,11 +779,11 @@ async function loadBriefings() {
   }
 }
 
-async function openBriefing(path, name) {
-  const viewer = document.getElementById('briefing-viewer');
+async function openBriefing(path, name, viewer, btn) {
   viewer.style.display = 'block';
   viewer.innerHTML = '<div class="loading">Loading…</div>';
-  viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  btn.textContent = 'Close';
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   try {
     const data = await ghGet(`contents/${path}`);
@@ -777,15 +791,18 @@ async function openBriefing(path, name) {
     viewer.innerHTML = `
       <div class="viewer-toolbar">
         <span class="viewer-title">${fmtDate(name)}</span>
-        <button class="btn" id="close-briefing-viewer">Close</button>
+        <button class="btn close-viewer-btn">Close</button>
       </div>
-      <div>${marked.parse(md)}</div>
+      <div class="briefing-body">${marked.parse(md)}</div>
     `;
-    document.getElementById('close-briefing-viewer').onclick = () => {
+    viewer.querySelector('.close-viewer-btn').onclick = () => {
       viewer.style.display = 'none';
+      viewer.innerHTML = '';
+      btn.textContent = 'Read';
     };
   } catch (e) {
     viewer.innerHTML = `<div class="empty">Failed to load: ${esc(e.message)}</div>`;
+    btn.textContent = 'Read';
   }
 }
 
@@ -906,27 +923,10 @@ async function triggerDailyRun() {
   }
 }
 
-async function pollDailyStatus() {
-  try {
-    const data = await ghGet(`actions/workflows/${DAILY_WORKFLOW_FILE}/runs?per_page=10`);
-    const run = data.workflow_runs?.find(r => r.created_at >= _dailyDispatchedAt);
-
-    if (!run || run.status !== 'completed') {
-      _dailyPollTimer = setTimeout(pollDailyStatus, 15000);
-      return;
-    }
-
-    if (run.conclusion === 'success') {
-      hideColProgress('daily', 'Completed ✓');
-      toast('Briefing ready — refreshing list…');
-      await loadBriefings();
-    } else {
-      hideColProgress('daily', `Finished (${run.conclusion})`);
-      toast(`Run ${run.conclusion} — check the Actions tab.`, true);
-    }
-  } catch {
-    _dailyPollTimer = setTimeout(pollDailyStatus, 20000);
-  }
+function showRunProgress() {
+  _pollStartedAt = Date.now();
+  document.getElementById('run-progress').classList.add('active');
+  document.getElementById('run-status').textContent = 'In progress…';
 }
 
 // ── Weekly run trigger ───────────────────────────────────────────────────────
@@ -963,7 +963,11 @@ async function triggerWeeklyRun() {
   }
 }
 
-async function pollWeeklyStatus() {
+async function pollRunStatus() {
+  if (_pollStartedAt && Date.now() - _pollStartedAt > 45 * 60 * 1000) {
+    hideRunProgress('Timed out');
+    return;
+  }
   try {
     const data = await ghGet(`actions/workflows/${WEEKLY_WORKFLOW_FILE}/runs?per_page=10`);
     const run = data.workflow_runs?.find(r => r.created_at >= _weeklyDispatchedAt);
@@ -986,19 +990,19 @@ async function pollWeeklyStatus() {
   }
 }
 
-function showColProgress(col) {
-  document.getElementById(`${col}-run-progress`).classList.add('active');
-}
-
-function hideColProgress(col, statusText) {
-  clearTimeout(col === 'daily' ? _dailyPollTimer : _weeklyPollTimer);
-  document.getElementById(`${col}-run-progress`).classList.remove('active');
-  const btn = document.getElementById(`${col}-run-btn`);
-  btn.disabled = false;
-  btn.textContent = '▶ Generate';
-  const statusEl = document.getElementById(`${col}-run-status`);
-  statusEl.textContent = statusText || '';
-  if (statusText) setTimeout(() => { statusEl.textContent = ''; }, 6000);
+async function checkActiveRun() {
+  try {
+    const data = await ghGet(`actions/workflows/${WORKFLOW_FILE}/runs?per_page=5`);
+    const run = data.workflow_runs?.[0];
+    if (!run || run.status === 'completed') return;
+    const before = new Date(run.created_at);
+    before.setSeconds(before.getSeconds() - 5);
+    _runDispatchedAt = before.toISOString();
+    showRunProgress();
+    _pollTimer = setTimeout(pollRunStatus, 8000);
+  } catch {
+    // No access or no runs yet — leave bar hidden
+  }
 }
 
 // ── Sources ──────────────────────────────────────────────────────────────────

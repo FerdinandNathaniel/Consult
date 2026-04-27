@@ -95,7 +95,7 @@ def generate_weekly_roundup(briefing_texts: list[tuple[str, str]], profile: dict
     system_msg = dedent(f"""\
         You are compiling a weekly news round-up for a senior policy analyst at {report['perspective']}.
         The analyst is writing a report on: "{report['title_en']}"
-        Write in Dutch. Use clear, analytical language suitable for a central bank analyst.
+        Write in English. Use clear, analytical language suitable for a central bank analyst.
     """)
 
     user_msg = dedent(f"""\
@@ -103,28 +103,30 @@ def generate_weekly_roundup(briefing_texts: list[tuple[str, str]], profile: dict
 
         Create a weekly round-up with exactly this structure:
 
-        # Weekoverzicht — Week [ISO week number], [year]
-        *Gebaseerd op [N] dagelijkse briefings · [oldest date] t/m [newest date]*
+        # Weekly Round-Up — Week [ISO week number], [year]
+        *Based on [N] daily briefings · [oldest date] to [newest date]*
 
-        ## Samenvatting van de week
+        ## Summary of the Week
         3-5 sentences covering the most important developments of the week.
-        Open with the most substantive finding. Do not start with "Deze week" or "In de afgelopen week".
+        Open with the most substantive finding. Do not start with "This week" or "In the past week".
+        For each claim or development you mention, link to the specific article(s) that support it
+        using inline markdown links, e.g. "The EU published new AI liability rules ([source](url))."
 
-        ## Meest relevante items
+        ## Most Relevant Items
         List all Tier 1 and notable Tier 2 articles, de-duplicated:
         - Group items that cover the same event or topic into one entry
         - For each unique story: write a 2-3 sentence summary, note which briefing(s) surfaced it
-          using short date labels like "ma 27 apr" or "di 28 apr", and include the original URL(s)
+          using short date labels like "Mon 27 Apr" or "Tue 28 Apr", and include the original URL(s)
           as markdown links
         - Sort by relevance: most important first
 
-        ## Wat bespraken gevolgde accounts deze week?
-        Pull the "Wat bespreken gevolgde accounts?" sections from each daily briefing
+        ## What Were Followed Accounts Discussing This Week?
+        Pull the "What Are Followed Accounts Discussing?" sections from each daily briefing
         and synthesise a weekly view: which themes recurred, what evolved across the week.
         If no social sections were present in any briefing, omit this section entirely.
 
         ---
-        *[N] unieke items · [N] dagelijkse briefings*
+        *[N] unique items · [N] daily briefings*
 
         Briefings:
         {combined}

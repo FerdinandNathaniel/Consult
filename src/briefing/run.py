@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 from .fetchers.rss import fetch_rss_articles
 from .fetchers.social import fetch_social_articles
 from .formatter import format_briefing
-from .processor import generate_executive_summary, score_articles
+from .processor import generate_executive_summary, generate_social_summary, score_articles
 
 load_dotenv()
 
@@ -53,18 +53,19 @@ def main(dry_run: bool = False) -> None:
     sources = load_yaml(CONFIG_DIR / "sources.yaml")
     profile = load_yaml(CONFIG_DIR / "report_profile.yaml")
 
-    # --- Fetch core sources ---
-    articles = []
-    articles += fetch_rss_articles(sources.get("rss_feeds", []))
-    social_articles, social_auth_failures = fetch_social_articles(sources.get("social", {}))
-    articles += social_articles
+    # --- Fetch core news sources ---
+    news_articles: list = []
+    news_articles += fetch_rss_articles(sources.get("rss_feeds", []))
+
+    # Social media fetched separately — not mixed into the news scoring pipeline
+    raw_social, social_auth_failures = fetch_social_articles(sources.get("social", {}))
 
     # Handle web_sources: items tagged type=rss are passed through the RSS fetcher
     web_as_rss = [
         s for s in sources.get("web_sources", []) if s.get("type") == "rss"
     ]
     if web_as_rss:
-        articles += fetch_rss_articles(web_as_rss)
+        news_articles += fetch_rss_articles(web_as_rss)
 
     # --- Serendipity sampling ---
     serendipity_pool = sources.get("serendipity_sources", [])
@@ -72,18 +73,26 @@ def main(dry_run: bool = False) -> None:
     sampled_serendipity = random.sample(serendipity_pool, min(n_serendipity, len(serendipity_pool)))
     if sampled_serendipity:
         logger.info(f"Serendipity sources sampled: {[s['name'] for s in sampled_serendipity]}")
-        articles += fetch_rss_articles(sampled_serendipity)
+        news_articles += fetch_rss_articles(sampled_serendipity)
 
-    # Deduplicate by URL (keep first occurrence)
+    # Deduplicate news articles by URL (keep first occurrence)
     seen_urls: set[str] = set()
-    unique_articles = []
-    for a in articles:
+    unique_news: list = []
+    for a in news_articles:
         if a.url not in seen_urls:
             seen_urls.add(a.url)
-            unique_articles.append(a)
-    articles = unique_articles
+            unique_news.append(a)
+    articles = unique_news
 
-    logger.info(f"Total articles fetched: {len(articles)}")
+    # Deduplicate social posts by URL
+    seen_social: set[str] = set()
+    social_articles: list = []
+    for a in raw_social:
+        if a.url not in seen_social:
+            seen_social.add(a.url)
+            social_articles.append(a)
+
+    logger.info(f"Total articles fetched: {len(articles)}, social posts: {len(social_articles)}")
 
     if not articles:
         logger.warning("No articles fetched — briefing will be empty")
@@ -127,12 +136,14 @@ def main(dry_run: bool = False) -> None:
             logger.info(f"Quality pass completed after {iterations_used} iterations")
 
         executive_summary = generate_executive_summary(articles, profile)
+        social_summary = generate_social_summary(social_articles, profile) if social_articles else ""
     else:
         logger.info("Dry run: skipping LLM scoring")
         for a in articles:
             a.tier = 2
             a.tier_reason = "(dry run)"
         executive_summary = "(dry run — no executive summary generated)"
+        social_summary = ""
 
     # --- Format ---
     serendipity_names = [s["name"] for s in sampled_serendipity] if sampled_serendipity else None
@@ -144,6 +155,7 @@ def main(dry_run: bool = False) -> None:
         iterations_used=iterations_used,
         scoring_ok=scoring_ok,
         social_auth_failures=social_auth_failures if social_auth_failures else None,
+        social_summary=social_summary if social_summary else None,
     )
 
     # --- Write output ---

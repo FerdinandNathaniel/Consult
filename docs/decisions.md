@@ -117,6 +117,14 @@ Merging them into one call would require either compromising the JSON format or 
 
 ---
 
+## 13. Weekly round-up: one briefing per calendar day, latest run wins
+
+**Decision:** The weekly round-up (`src/briefing/weekly.py`) selects briefings by scanning the past 7 calendar days. When multiple files exist for the same date (e.g. a manual re-run with a different model), only the file with the latest timestamp in its filename is used.
+
+**Why:** Briefing filenames encode both date and time (`briefing_YYYY-MM-DD_HHMM.md`). A manual re-run on the same day is intended to produce a better result, so the later run should supersede the earlier one. Using a static "last N files" count would silently include multiple runs for the same day while excluding valid days earlier in the week — giving a skewed or redundant input to the weekly synthesis.
+
+---
+
 ## 10. 25-hour lookback window
 
 **Decision:** Article fetching uses a 25-hour lookback window rather than exactly 24 hours.

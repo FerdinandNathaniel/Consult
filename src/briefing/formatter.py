@@ -27,6 +27,7 @@ def format_briefing(
     iterations_used: int = 1,
     scoring_ok: bool = True,
     social_auth_failures: list[str] | None = None,
+    social_summary: str | None = None,
 ) -> str:
     if generated_at is None:
         generated_at = datetime.now(CET)
@@ -68,6 +69,15 @@ def format_briefing(
             "## Samenvatting",
             "",
             executive_summary,
+            "",
+        ]
+
+    # Social section
+    if social_summary:
+        lines += [
+            "## Wat bespreken gevolgde accounts?",
+            "",
+            social_summary,
             "",
         ]
 

@@ -123,6 +123,9 @@ def generate_weekly_roundup(briefing_texts: list[tuple[str, str]], profile: dict
         ## What Were Followed Accounts Discussing This Week?
         Pull the "What Are Followed Accounts Discussing?" sections from each daily briefing
         and synthesise a weekly view: which themes recurred, what evolved across the week.
+        For every concrete development, policy move, funding event, company update, or other
+        factual claim you mention in this section, include inline markdown links to the relevant
+        article URL(s) from the earlier daily briefings that support it.
         If no social sections were present in any briefing, omit this section entirely.
 
         ---

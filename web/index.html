@@ -615,9 +615,12 @@ async function saveDefaultModel() {
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-let _runDispatchedAt = null;
-let _pollTimer = null;
-let _pollStartedAt = null;
+let _dailyDispatchedAt = null;
+let _dailyPollTimer = null;
+let _dailyPollStartedAt = null;
+let _weeklyDispatchedAt = null;
+let _weeklyPollTimer = null;
+let _weeklyPollStartedAt = null;
 
 const state = {
   pat: localStorage.getItem('gh_pat') || '',
@@ -709,7 +712,9 @@ function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   initModelSelect();
-  loadFeedback().then(loadBriefings);
+  loadFeedback().then(async () => {
+    await Promise.all([loadBriefings(), loadRoundups()]);
+  });
   checkActiveRun();
 }
 
@@ -923,10 +928,38 @@ async function triggerDailyRun() {
   }
 }
 
-function showRunProgress() {
-  _pollStartedAt = Date.now();
-  document.getElementById('run-progress').classList.add('active');
-  document.getElementById('run-status').textContent = 'In progress…';
+function showColProgress(col) {
+  if (col === 'daily') {
+    _dailyPollStartedAt = Date.now();
+  } else {
+    _weeklyPollStartedAt = Date.now();
+  }
+  document.getElementById(`${col}-run-progress`).classList.add('active');
+}
+
+function hideColProgress(col, statusText) {
+  if (col === 'daily') {
+    clearTimeout(_dailyPollTimer);
+    _dailyPollTimer = null;
+    _dailyPollStartedAt = null;
+  } else {
+    clearTimeout(_weeklyPollTimer);
+    _weeklyPollTimer = null;
+    _weeklyPollStartedAt = null;
+  }
+
+  document.getElementById(`${col}-run-progress`).classList.remove('active');
+  const btn = document.getElementById(`${col}-run-btn`);
+  btn.disabled = false;
+  btn.textContent = '▶ Generate';
+
+  const statusEl = document.getElementById(`${col}-run-status`);
+  statusEl.textContent = statusText || '';
+  if (statusText) {
+    setTimeout(() => {
+      if (statusEl.textContent === statusText) statusEl.textContent = '';
+    }, 6000);
+  }
 }
 
 // ── Weekly run trigger ───────────────────────────────────────────────────────
@@ -963,9 +996,9 @@ async function triggerWeeklyRun() {
   }
 }
 
-async function pollRunStatus() {
-  if (_pollStartedAt && Date.now() - _pollStartedAt > 45 * 60 * 1000) {
-    hideRunProgress('Timed out');
+async function pollWeeklyStatus() {
+  if (_weeklyPollStartedAt && Date.now() - _weeklyPollStartedAt > 45 * 60 * 1000) {
+    hideColProgress('weekly', 'Timed out');
     return;
   }
   try {
@@ -990,19 +1023,67 @@ async function pollRunStatus() {
   }
 }
 
-async function checkActiveRun() {
-  try {
-    const data = await ghGet(`actions/workflows/${WORKFLOW_FILE}/runs?per_page=5`);
-    const run = data.workflow_runs?.[0];
-    if (!run || run.status === 'completed') return;
-    const before = new Date(run.created_at);
-    before.setSeconds(before.getSeconds() - 5);
-    _runDispatchedAt = before.toISOString();
-    showRunProgress();
-    _pollTimer = setTimeout(pollRunStatus, 8000);
-  } catch {
-    // No access or no runs yet — leave bar hidden
+async function pollDailyStatus() {
+  if (_dailyPollStartedAt && Date.now() - _dailyPollStartedAt > 45 * 60 * 1000) {
+    hideColProgress('daily', 'Timed out');
+    return;
   }
+  try {
+    const data = await ghGet(`actions/workflows/${DAILY_WORKFLOW_FILE}/runs?per_page=10`);
+    const run = data.workflow_runs?.find(r => r.created_at >= _dailyDispatchedAt);
+
+    if (!run || run.status !== 'completed') {
+      _dailyPollTimer = setTimeout(pollDailyStatus, 15000);
+      return;
+    }
+
+    if (run.conclusion === 'success') {
+      hideColProgress('daily', 'Completed ✓');
+      toast('Briefing ready — refreshing list…');
+      await loadBriefings();
+    } else {
+      hideColProgress('daily', `Finished (${run.conclusion})`);
+      toast(`Run ${run.conclusion} — check the Actions tab.`, true);
+    }
+  } catch {
+    _dailyPollTimer = setTimeout(pollDailyStatus, 20000);
+  }
+}
+
+async function checkActiveRun() {
+  const checks = [
+    {
+      workflowFile: DAILY_WORKFLOW_FILE,
+      col: 'daily',
+      setDispatchedAt: value => { _dailyDispatchedAt = value; },
+      setTimer: value => { _dailyPollTimer = value; },
+      poll: pollDailyStatus,
+    },
+    {
+      workflowFile: WEEKLY_WORKFLOW_FILE,
+      col: 'weekly',
+      setDispatchedAt: value => { _weeklyDispatchedAt = value; },
+      setTimer: value => { _weeklyPollTimer = value; },
+      poll: pollWeeklyStatus,
+    },
+  ];
+
+  await Promise.all(checks.map(async ({ workflowFile, col, setDispatchedAt, setTimer, poll }) => {
+    try {
+      const data = await ghGet(`actions/workflows/${workflowFile}/runs?per_page=5`);
+      const run = data.workflow_runs?.[0];
+      if (!run || run.status === 'completed') return;
+
+      const before = new Date(run.created_at);
+      before.setSeconds(before.getSeconds() - 5);
+      setDispatchedAt(before.toISOString());
+      showColProgress(col);
+      document.getElementById(`${col}-run-status`).textContent = 'In progress…';
+      setTimer(setTimeout(poll, 8000));
+    } catch {
+      // No access or no runs yet — leave this column idle
+    }
+  }));
 }
 
 // ── Sources ──────────────────────────────────────────────────────────────────

@@ -19,16 +19,47 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 
 SOURCES_PATH = Path("config/sources.yaml")
-REQUEST_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)"}
-REQUEST_TIMEOUT = 12
+# Use a real browser User-Agent so CDNs (Cloudflare, Fastly, etc.) don't
+# block the request.  feedparser's default UA is often filtered.
+REQUEST_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    ),
+    "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+}
+REQUEST_TIMEOUT = 15
+
+
+def fetch_and_parse(url: str) -> "feedparser.FeedParserDict | None":
+    """Fetch URL with requests (browser UA) and parse the content with feedparser.
+
+    Using requests as the HTTP layer lets us control the User-Agent, which
+    avoids CDN bot-blocks that feedparser.parse(url) routinely triggers.
+    """
+    try:
+        r = requests.get(url, timeout=REQUEST_TIMEOUT, headers=REQUEST_HEADERS,
+                         allow_redirects=True)
+        if r.status_code != 200:
+            return None
+        feed = feedparser.parse(r.content)
+        return feed
+    except Exception:
+        return None
 
 
 def is_valid_feed(url: str) -> bool:
-    try:
-        feed = feedparser.parse(url)
-        return bool(feed.entries) or bool(feed.feed.get("title"))
-    except Exception:
+    feed = fetch_and_parse(url)
+    if feed is None:
         return False
+    return bool(feed.entries) or bool(feed.feed.get("title"))
+
+
+def get_feed_title(feed_url: str, fallback: str) -> str:
+    feed = fetch_and_parse(feed_url)
+    if feed is None:
+        return fallback
+    return feed.feed.get("title", "").strip() or fallback
 
 
 def discover_via_html(url: str) -> str | None:
@@ -40,9 +71,11 @@ def discover_via_html(url: str) -> str | None:
             if "rss" in link_type or "atom" in link_type:
                 href = link.get("href", "").strip()
                 if href:
-                    return urljoin(url, href)
-    except Exception:
-        pass
+                    found = urljoin(url, href)
+                    print(f"  HTML autodiscovery candidate: {found}")
+                    return found
+    except Exception as exc:
+        print(f"  HTML autodiscovery error: {exc}")
     return None
 
 
@@ -65,33 +98,37 @@ def discover_via_common_paths(url: str) -> str | None:
     base = f"{parsed.scheme}://{parsed.netloc}"
 
     # Try suffixes on both the root domain and the given URL's path so that
-    # e.g. https://example.com/the-batch finds /the-batch/feed.xml.
+    # e.g. https://example.com/the-batch also checks /the-batch/feed.xml.
     prefixes = [base]
     path = parsed.path.rstrip("/")
-    if path and path != "":
+    if path:
         prefixes.append(base + path)
 
     seen: set[str] = set()
     for prefix in prefixes:
         for suffix in COMMON_FEED_SUFFIXES:
             candidate = prefix + suffix
-            if candidate not in seen:
-                seen.add(candidate)
-                if is_valid_feed(candidate):
-                    return candidate
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            print(f"  Trying: {candidate}")
+            if is_valid_feed(candidate):
+                return candidate
     return None
 
 
 def try_url_variants(url: str) -> str | None:
-    """Try the LLM-suggested URL and sensible variations (trailing slash, .xml, etc.)."""
+    """Try the LLM-suggested URL and sensible variations (.xml, trailing slash, etc.)."""
     base = url.rstrip("/")
     variants = [url, base, base + ".xml", base + "/feed", base + "/feed.xml"]
     seen: set[str] = set()
     for v in variants:
-        if v not in seen:
-            seen.add(v)
-            if is_valid_feed(v):
-                return v
+        if v in seen:
+            continue
+        seen.add(v)
+        print(f"  Trying variant: {v}")
+        if is_valid_feed(v):
+            return v
     return None
 
 
@@ -113,7 +150,8 @@ def discover_via_llm(url: str) -> tuple[str, str] | None:
                     f"You are an RSS feed discovery assistant.\n\n"
                     f"Website URL: {url}\n\n"
                     "Reply with ONLY a JSON object (no markdown, no explanation):\n"
-                    '{"feed_url": "<most likely RSS/Atom feed URL — include full path and .xml extension if applicable>", '
+                    '{"feed_url": "<most likely RSS/Atom feed URL — include full path '
+                    'and .xml extension if applicable>", '
                     '"name": "<short descriptive source name>"}\n\n'
                     'If you cannot reasonably guess a feed URL, set "feed_url" to null.'
                 ),
@@ -131,16 +169,8 @@ def discover_via_llm(url: str) -> tuple[str, str] | None:
         if feed_url:
             return feed_url, name
     except Exception as exc:
-        print(f"LLM discovery error: {exc}")
+        print(f"  LLM error: {exc}")
     return None
-
-
-def get_feed_title(feed_url: str, fallback: str) -> str:
-    try:
-        feed = feedparser.parse(feed_url)
-        return feed.feed.get("title", "").strip() or fallback
-    except Exception:
-        return fallback
 
 
 def append_to_sources(source_name: str, feed_url: str) -> None:
@@ -178,42 +208,48 @@ def main() -> None:
     source_name: str = ""
 
     # 1. Check if URL is already a valid feed
-    print("Checking if URL is already an RSS feed…")
+    print("\n[1/4] Checking if URL is already an RSS feed…")
     if is_valid_feed(url):
         feed_url = url
-        print("URL is already a valid feed.")
+        print("  ✓ URL is already a valid feed.")
 
     # 2. HTML autodiscovery
     if not feed_url:
-        print("Trying HTML autodiscovery…")
+        print("\n[2/4] Trying HTML autodiscovery…")
         feed_url = discover_via_html(url)
         if feed_url:
-            print(f"Found via HTML autodiscovery: {feed_url}")
+            print(f"  ✓ Found via HTML autodiscovery: {feed_url}")
+        else:
+            print("  No RSS link tag found.")
 
     # 3. Common paths
     if not feed_url:
-        print("Trying common feed paths…")
+        print("\n[3/4] Trying common feed paths…")
         feed_url = discover_via_common_paths(url)
         if feed_url:
-            print(f"Found via common path: {feed_url}")
+            print(f"  ✓ Found via common path: {feed_url}")
+        else:
+            print("  No common path matched.")
 
     # 4. LLM suggestion
     if not feed_url:
-        print("Asking LLM for a feed URL suggestion…")
+        print("\n[4/4] Asking LLM for a feed URL suggestion…")
         result = discover_via_llm(url)
         if result:
             candidate, llm_name = result
-            print(f"LLM suggested: {candidate}")
+            print(f"  LLM suggested: {candidate}")
             validated = try_url_variants(candidate)
             if validated:
                 feed_url = validated
                 source_name = llm_name
-                print(f"LLM suggestion validated: {validated}")
+                print(f"  ✓ Validated: {validated}")
             else:
-                print(f"LLM suggestion could not be validated: {candidate}")
+                print(f"  ✗ Could not validate LLM suggestion.")
+        else:
+            print("  LLM returned no suggestion.")
 
     if not feed_url:
-        print(f"ERROR: Could not find a valid RSS feed for {url}", file=sys.stderr)
+        print(f"\nERROR: Could not find a valid RSS feed for {url}", file=sys.stderr)
         sys.exit(1)
 
     # Resolve source name from the feed if not already set by LLM
@@ -224,11 +260,11 @@ def main() -> None:
     existing = yaml.safe_load(SOURCES_PATH.read_text())
     existing_urls = [s.get("url", "") for s in (existing.get("rss_feeds") or [])]
     if feed_url in existing_urls:
-        print(f"Feed already in sources.yaml: {feed_url}")
+        print(f"\nFeed already in sources.yaml: {feed_url}")
         sys.exit(0)
 
     append_to_sources(source_name, feed_url)
-    print(f'SUCCESS: Added "{source_name}" ({feed_url})')
+    print(f'\nSUCCESS: Added "{source_name}" ({feed_url})')
 
 
 if __name__ == "__main__":

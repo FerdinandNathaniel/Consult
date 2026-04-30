@@ -358,6 +358,23 @@
     }
     .direct-add-toggle:hover { color: var(--text); }
     .direct-add-panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .direct-row { margin-bottom: 6px; }
+    .direct-row .remove-row-btn {
+      background: none; border: none;
+      color: var(--muted); font-size: 16px; line-height: 1;
+      padding: 2px 5px; cursor: pointer; border-radius: var(--radius); flex-shrink: 0;
+    }
+    .direct-row .remove-row-btn:hover { color: var(--bad); background: var(--bad-bg); }
+    .add-row-btn {
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 12px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .add-row-btn:hover { border-color: var(--text); color: var(--text); background: var(--bg); }
 
     /* ── Toast ───────────────────────────────────────────── */
 
@@ -1196,10 +1213,10 @@ function renderSources() {
       <div>
         <button class="direct-add-toggle" onclick="toggleDirectAdd()">Already have the RSS feed URL? Add directly.</button>
         <div id="direct-add-panel" class="direct-add-panel" style="display:none">
-          <div class="row">
-            <input type="text" id="direct-name" placeholder="Source name" style="flex:1" />
-            <input type="url"  id="direct-rss"  placeholder="RSS feed URL" style="flex:2" />
-            <button class="btn btn-primary" id="direct-add-btn" onclick="addSourceDirect()">Add</button>
+          <div id="direct-rows"></div>
+          <div class="row" style="margin-top:8px">
+            <button class="add-row-btn" onclick="addDirectRow()">+ Add row</button>
+            <button class="btn btn-primary" id="direct-add-btn" onclick="addSourcesDirect()">Add source</button>
           </div>
         </div>
       </div>
@@ -1312,13 +1329,65 @@ async function removeSource(url, name) {
 
 function toggleDirectAdd() {
   const panel = document.getElementById('direct-add-panel');
-  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (!panel) return;
+  const opening = panel.style.display === 'none';
+  panel.style.display = opening ? 'block' : 'none';
+  // Seed with one empty row the first time it opens
+  if (opening && document.getElementById('direct-rows').children.length === 0) {
+    addDirectRow();
+  }
 }
 
-async function addSourceDirect() {
-  const name = document.getElementById('direct-name').value.trim();
-  const url  = document.getElementById('direct-rss').value.trim();
-  if (!name || !url) { toast('Name and RSS URL are required.', true); return; }
+function _makeDirectRow() {
+  const div = document.createElement('div');
+  div.className = 'direct-row row';
+  div.innerHTML = `
+    <input type="text" class="direct-name" placeholder="Source name" style="flex:1" />
+    <input type="url"  class="direct-rss"  placeholder="RSS feed URL"  style="flex:2" />
+    <button class="remove-row-btn" onclick="removeDirectRow(this)" title="Remove row">&times;</button>
+  `;
+  return div;
+}
+
+function _syncDirectRowButtons() {
+  const rows = document.querySelectorAll('#direct-rows .direct-row');
+  rows.forEach(r => {
+    r.querySelector('.remove-row-btn').style.display = rows.length > 1 ? 'inline' : 'none';
+  });
+  // Keep submit label in sync
+  const filled = [...rows].filter(r =>
+    r.querySelector('.direct-name').value.trim() &&
+    r.querySelector('.direct-rss').value.trim()
+  ).length;
+  const btn = document.getElementById('direct-add-btn');
+  if (btn) btn.textContent = filled > 1 ? `Add ${filled} sources` : 'Add source';
+}
+
+function addDirectRow() {
+  const container = document.getElementById('direct-rows');
+  const row = _makeDirectRow();
+  // Update button label when user types
+  row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', _syncDirectRowButtons));
+  container.appendChild(row);
+  _syncDirectRowButtons();
+  row.querySelector('.direct-name').focus();
+}
+
+function removeDirectRow(btn) {
+  btn.closest('.direct-row').remove();
+  _syncDirectRowButtons();
+}
+
+async function addSourcesDirect() {
+  const rows = document.querySelectorAll('#direct-rows .direct-row');
+  const entries = [...rows]
+    .map(r => ({
+      name: r.querySelector('.direct-name').value.trim(),
+      url:  r.querySelector('.direct-rss').value.trim(),
+    }))
+    .filter(e => e.name && e.url);
+
+  if (!entries.length) { toast('Fill in at least one name and RSS URL.', true); return; }
 
   const btn = document.getElementById('direct-add-btn');
   btn.disabled = true;
@@ -1327,13 +1396,14 @@ async function addSourceDirect() {
   try {
     const fileData = await ghGet(`contents/${SOURCES_PATH}`);
     const parsed   = jsyaml.load(b64decode(fileData.content));
-    parsed.rss_feeds = [...(parsed.rss_feeds || []), { name, url }];
+    parsed.rss_feeds = [...(parsed.rss_feeds || []), ...entries];
 
+    const label = entries.length === 1 ? entries[0].name : `${entries.length} sources`;
     const r = await ghFetch(`contents/${SOURCES_PATH}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: `sources: add ${name}`,
+        message: `sources: add ${label}`,
         content: b64encode(jsyaml.dump(parsed, { indent: 2, lineWidth: 120 })),
         sha: fileData.sha,
         branch: 'main',
@@ -1344,15 +1414,14 @@ async function addSourceDirect() {
       throw new Error(body.message || `HTTP ${r.status}`);
     }
 
-    toast(`"${name}" added — active on the next run.`);
-    document.getElementById('direct-name').value = '';
-    document.getElementById('direct-rss').value  = '';
+    toast(entries.length === 1
+      ? `"${entries[0].name}" added — active on the next run.`
+      : `${entries.length} sources added — active on the next run.`);
     loadSources();
   } catch (e) {
     toast(`Failed to add: ${e.message}`, true);
-  } finally {
     btn.disabled = false;
-    btn.textContent = 'Add';
+    btn.textContent = entries.length > 1 ? `Add ${entries.length} sources` : 'Add source';
   }
 }
 

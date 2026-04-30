@@ -46,63 +46,92 @@ def discover_via_html(url: str) -> str | None:
     return None
 
 
+COMMON_FEED_SUFFIXES = [
+    "/feed",
+    "/feed.xml",
+    "/feed.rss",
+    "/rss",
+    "/rss.xml",
+    "/atom.xml",
+    "/feeds/posts/default",
+    "/blog/feed",
+    "/news/feed",
+    "/en/rss.xml",
+]
+
+
 def discover_via_common_paths(url: str) -> str | None:
     parsed = urlparse(url)
     base = f"{parsed.scheme}://{parsed.netloc}"
-    candidates = [
-        "/feed",
-        "/rss",
-        "/feed.xml",
-        "/rss.xml",
-        "/atom.xml",
-        "/feeds/posts/default",
-        "/blog/feed",
-        "/news/feed",
-        "/en/rss.xml",
-    ]
-    for path in candidates:
-        candidate = base + path
-        if is_valid_feed(candidate):
-            return candidate
+
+    # Try suffixes on both the root domain and the given URL's path so that
+    # e.g. https://example.com/the-batch finds /the-batch/feed.xml.
+    prefixes = [base]
+    path = parsed.path.rstrip("/")
+    if path and path != "":
+        prefixes.append(base + path)
+
+    seen: set[str] = set()
+    for prefix in prefixes:
+        for suffix in COMMON_FEED_SUFFIXES:
+            candidate = prefix + suffix
+            if candidate not in seen:
+                seen.add(candidate)
+                if is_valid_feed(candidate):
+                    return candidate
+    return None
+
+
+def try_url_variants(url: str) -> str | None:
+    """Try the LLM-suggested URL and sensible variations (trailing slash, .xml, etc.)."""
+    base = url.rstrip("/")
+    variants = [url, base, base + ".xml", base + "/feed", base + "/feed.xml"]
+    seen: set[str] = set()
+    for v in variants:
+        if v not in seen:
+            seen.add(v)
+            if is_valid_feed(v):
+                return v
     return None
 
 
 def discover_via_llm(url: str) -> tuple[str, str] | None:
-    client = OpenAI(
-        api_key=os.environ["OPENROUTER_API_KEY"],
-        base_url="https://openrouter.ai/api/v1",
-    )
-    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
-
-    response = client.chat.completions.create(
-        model=model,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"You are an RSS feed discovery assistant.\n\n"
-                f"Website URL: {url}\n\n"
-                "Reply with ONLY a JSON object (no markdown, no explanation):\n"
-                '{"feed_url": "<most likely RSS/Atom feed URL>", "name": "<short descriptive source name>"}\n\n'
-                'If you cannot reasonably guess a feed URL, set "feed_url" to null.'
-            ),
-        }],
-        temperature=0,
-        max_tokens=200,
-    )
-
     import json
-    text = response.choices[0].message.content.strip()
-    # Strip markdown code fences if present
-    text = re.sub(r"^```[a-z]*\n?", "", text)
-    text = re.sub(r"\n?```$", "", text)
+
     try:
+        client = OpenAI(
+            api_key=os.environ["OPENROUTER_API_KEY"],
+            base_url="https://openrouter.ai/api/v1",
+        )
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-6")
+
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"You are an RSS feed discovery assistant.\n\n"
+                    f"Website URL: {url}\n\n"
+                    "Reply with ONLY a JSON object (no markdown, no explanation):\n"
+                    '{"feed_url": "<most likely RSS/Atom feed URL — include full path and .xml extension if applicable>", '
+                    '"name": "<short descriptive source name>"}\n\n'
+                    'If you cannot reasonably guess a feed URL, set "feed_url" to null.'
+                ),
+            }],
+            temperature=0,
+            max_tokens=200,
+        )
+
+        text = response.choices[0].message.content.strip()
+        text = re.sub(r"^```[a-z]*\n?", "", text)
+        text = re.sub(r"\n?```$", "", text)
         data = json.loads(text)
         feed_url = data.get("feed_url")
         name = data.get("name", "")
         if feed_url:
             return feed_url, name
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"LLM discovery error: {exc}")
     return None
 
 
@@ -175,10 +204,11 @@ def main() -> None:
         if result:
             candidate, llm_name = result
             print(f"LLM suggested: {candidate}")
-            if is_valid_feed(candidate):
-                feed_url = candidate
+            validated = try_url_variants(candidate)
+            if validated:
+                feed_url = validated
                 source_name = llm_name
-                print("LLM suggestion validated.")
+                print(f"LLM suggestion validated: {validated}")
             else:
                 print(f"LLM suggestion could not be validated: {candidate}")
 

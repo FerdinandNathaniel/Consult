@@ -1,484 +1,250 @@
-# =============================================================================
-# SOURCE CONFIGURATION
-# Add/remove sources freely — each run picks up whatever is listed here.
-# Categories are free-form labels used for context in the briefing.
-#
-# Structure:
-#   rss_feeds         — fetched every run (core signal sources)
-#   social            — Twitter/X via RSSHub (self-host required; see docs/setup.md)
-#   web_sources       — official pages checked for new documents (type=rss treated as feeds)
-#   serendipity_sources — curated pool; SERENDIPITY_N (default: 5) are randomly sampled
-#                         each run to add variety and surface less obvious sources
-# =============================================================================
-
 rss_feeds:
-
-  # --- Dutch / National ---
-  - name: "NOS Nieuws - Tech"
-    url: "https://feeds.nos.nl/nosnieuwstech"
-    category: "national_news"
-    language: "nl"
-
-  # ARQ Foundation (arq.org) — no public RSS feed found. Re-add if they publish one.
-  # - name: "ARQ Foundation"
-  #   url: ""
-  #   category: "official_nl"
-  #   language: "nl"
-
-  # Rathenau Instituut — no public RSS feed; newsletter-only. Re-add if they publish one.
-  # - name: "Rathenau Instituut"
-  #   url: ""
-  #   category: "official_nl"
-  #   language: "nl"
-
-  # FD requires a subscription for RSS access — no public feed available.
-  # - name: "Het Financieele Dagblad"
-  #   url: "https://fd.nl/rss.xml"
-  #   category: "national_news"
-  #   language: "nl"
-
-  # DNB moved/restricted their RSS feed — no working public URL found.
-  # - name: "De Nederlandsche Bank - Nieuws"
-  #   url: "https://www.dnb.nl/rss/nieuws.xml"
-  #   category: "official_nl"
-  #   language: "nl"
-
-  # Techleap.nl — no public RSS feed found. Newsletter/blog only.
-  # - name: "Techleap.nl"
-  #   url: ""
-  #   category: "official_nl"
-  #   language: "en"
-
-  # NWO — no public RSS feed; biweekly newsletter only.
-  # - name: "NWO - Nieuws"
-  #   url: ""
-  #   category: "official_nl"
-  #   language: "nl"
-
-  # --- EU / European policy ---
-  - name: "European Commission - Digital Strategy"
-    url: "https://digital-strategy.ec.europa.eu/en/rss.xml"
-    category: "official_eu"
-    language: "en"
-
-  - name: "European Parliament - News"
-    url: "https://www.europarl.europa.eu/rss/doc/top-stories/en.xml"
-    category: "official_eu"
-    language: "en"
-
-  - name: "Euractiv Technology"
-    url: "https://www.euractiv.com/sections/tech/feed"
-    category: "eu_policy"
-    language: "en"
-
-  # EU Observer redirects to a non-feed page — disabled until correct feed URL is found.
-  # - name: "EU Observer"
-  #   url: "https://euobserver.com/rss/all"
-  #   category: "eu_policy"
-  #   language: "en"
-
-  # Science|Business — no public RSS; newsletter-only.
-  # - name: "Science|Business"
-  #   url: ""
-  #   category: "eu_policy"
-  #   language: "en"
-
-  - name: "European Parliament Think Tank (EPRS)"
-    url: "https://epthinktank.eu/feed/"
-    category: "official_eu"
-    language: "en"
-
-  - name: "Politico EU - Tech & AI"
-    url: "https://www.politico.eu/tag/artificial-intelligence/feed/"
-    category: "eu_policy"
-    language: "en"
-    # Note: rss.politico.eu no longer resolves; this tag-based URL may work instead — verify
-
-  # --- European & Dutch think tanks (economics & AI policy) ---
-  - name: "Bruegel"
-    url: "https://www.bruegel.org/rss.xml"
-    category: "eu_thinktank"
-    language: "en"
-
-  - name: "CEPR (Centre for Economic Policy Research)"
-    url: "https://cepr.org/rss.xml"
-    category: "eu_thinktank"
-    language: "en"
-
-  - name: "Centre for Future Generations"
-    url: "https://cfg.eu/feed"
-    category: "eu_thinktank"
-    language: "en"
-
-  - name: "Delta Instituut"
-    url: "https://deltainstituut.substack.com/feed"
-    category: "eu_thinktank"
-    language: "nl"
-
-  # --- Central bank & financial institution research ---
-  - name: "ECB Working Papers"
-    url: "https://www.ecb.europa.eu/rss/wppub.html"
-    category: "central_bank_research"
-    language: "en"
-
-  - name: "ECB Blog"
-    url: "https://www.ecb.europa.eu/rss/blog.html"
-    category: "central_bank_research"
-    language: "en"
-
-  - name: "BIS Central Bank Research Hub"
-    url: "https://www.bis.org/doclist/reshub_papers.rss"
-    category: "central_bank_research"
-    language: "en"
-
-  - name: "IMF Blog"
-    url: "https://www.imf.org/en/Blogs/rss"
-    category: "central_bank_research"
-    language: "en"
-
-  - name: "OECD AI Policy Observatory"
-    url: "https://wp.oecd.ai/feed/"
-    category: "central_bank_research"
-    language: "en"
-
-  # --- European startup & VC ---
-  - name: "Sifted"
-    url: "https://sifted.eu/feed"
-    category: "eu_startup_vc"
-    language: "en"
-
-  - name: "Tech.eu"
-    url: "https://tech.eu/feed/"
-    category: "eu_startup_vc"
-    language: "en"
-
-  # --- International AI research & analysis ---
-  - name: "MIT Technology Review"
-    url: "https://www.technologyreview.com/feed/"
-    category: "ai_research"
-    language: "en"
-
-  - name: "Stanford HAI"
-    url: "https://hai.stanford.edu/news/rss.xml"
-    category: "ai_research"
-    language: "en"
-
-  # --- AI newsletters (expert signal, published weekly) ---
-  - name: "The Batch (DeepLearning.AI)"
-    url: "https://www.deeplearning.ai/the-batch/feed.xml"
-    category: "ai_newsletter"
-    language: "en"
-
-  - name: "Import AI (Jack Clark)"
-    url: "https://importai.substack.com/feed"
-    category: "ai_newsletter"
-    language: "en"
-
-  - name: "Exponential View (Azeem Azhar)"
-    url: "https://www.exponentialview.co/feed"
-    category: "ai_newsletter"
-    language: "en"
-
-  - name: "AI Snake Oil (Narayanan & Kapoor)"
-    url: "https://aisnakeoil.substack.com/feed"
-    category: "ai_newsletter"
-    language: "en"
-
-# =============================================================================
-# SOCIAL MEDIA ACCOUNTS
-# Twitter/X accounts are fetched via RSSHub.
-#
-# IMPORTANT: rsshub.app no longer serves Twitter/X feeds.
-# Self-hosting is required — see docs/setup.md for a one-click Railway deploy.
-# Once deployed, set the RSSHUB_INSTANCE secret in GitHub Actions and update
-# rsshub_instance below (or keep it in .env for local runs).
-#
-# LinkedIn is not supported (no viable free API).
-# =============================================================================
-
+  - name: NOS Nieuws - Tech
+    url: https://feeds.nos.nl/nosnieuwstech
+    category: national_news
+    language: nl
+  - name: European Commission - Digital Strategy
+    url: https://digital-strategy.ec.europa.eu/en/rss.xml
+    category: official_eu
+    language: en
+  - name: European Parliament - News
+    url: https://www.europarl.europa.eu/rss/doc/top-stories/en.xml
+    category: official_eu
+    language: en
+  - name: Euractiv Technology
+    url: https://www.euractiv.com/sections/tech/feed
+    category: eu_policy
+    language: en
+  - name: European Parliament Think Tank (EPRS)
+    url: https://epthinktank.eu/feed/
+    category: official_eu
+    language: en
+  - name: Politico EU - Tech & AI
+    url: https://www.politico.eu/tag/artificial-intelligence/feed/
+    category: eu_policy
+    language: en
+  - name: Bruegel
+    url: https://www.bruegel.org/rss.xml
+    category: eu_thinktank
+    language: en
+  - name: CEPR (Centre for Economic Policy Research)
+    url: https://cepr.org/rss.xml
+    category: eu_thinktank
+    language: en
+  - name: Centre for Future Generations
+    url: https://cfg.eu/feed
+    category: eu_thinktank
+    language: en
+  - name: Delta Instituut
+    url: https://deltainstituut.substack.com/feed
+    category: eu_thinktank
+    language: nl
+  - name: ECB Working Papers
+    url: https://www.ecb.europa.eu/rss/wppub.html
+    category: central_bank_research
+    language: en
+  - name: ECB Blog
+    url: https://www.ecb.europa.eu/rss/blog.html
+    category: central_bank_research
+    language: en
+  - name: BIS Central Bank Research Hub
+    url: https://www.bis.org/doclist/reshub_papers.rss
+    category: central_bank_research
+    language: en
+  - name: IMF Blog
+    url: https://www.imf.org/en/Blogs/rss
+    category: central_bank_research
+    language: en
+  - name: OECD AI Policy Observatory
+    url: https://wp.oecd.ai/feed/
+    category: central_bank_research
+    language: en
+  - name: Sifted
+    url: https://sifted.eu/feed
+    category: eu_startup_vc
+    language: en
+  - name: Tech.eu
+    url: https://tech.eu/feed/
+    category: eu_startup_vc
+    language: en
+  - name: MIT Technology Review
+    url: https://www.technologyreview.com/feed/
+    category: ai_research
+    language: en
+  - name: Stanford HAI
+    url: https://hai.stanford.edu/news/rss.xml
+    category: ai_research
+    language: en
+  - name: Import AI (Jack Clark)
+    url: https://importai.substack.com/feed
+    category: ai_newsletter
+    language: en
+  - name: Exponential View (Azeem Azhar)
+    url: https://www.exponentialview.co/feed
+    category: ai_newsletter
+    language: en
+  - name: AI Snake Oil (Narayanan & Kapoor)
+    url: https://aisnakeoil.substack.com/feed
+    category: ai_newsletter
+    language: en
 social:
-  rsshub_instance: "https://rsshub.app"  # Replace with self-hosted URL to activate
-
+  rsshub_instance: https://rsshub.app
   twitter_accounts:
-    # --- EU leadership & digital policy ---
-    - handle: "alexstubb"
-      name: "Alexander Stubb"
-      relevance_hint: "EU leadership, AI governance, digital policy"
-
-    - handle: "Vestager"
-      name: "Margrethe Vestager"
-      relevance_hint: "EU digital/competition commissioner, AI regulation architect"
-
-    - handle: "ThierryBreton"
-      name: "Thierry Breton"
-      relevance_hint: "Former EU digital commissioner, EU AI Act, industrial policy"
-
-    # --- AI research & governance ---
-    - handle: "ylecun"
-      name: "Yann LeCun"
-      relevance_hint: "AI research, Meta, open-source AI debates"
-
-    - handle: "AndrewYNg"
-      name: "Andrew Ng"
-      relevance_hint: "AI industry, education, startup ecosystem"
-
-    - handle: "GaryMarcus"
-      name: "Gary Marcus"
-      relevance_hint: "AI critique, policy, safety"
-
-    - handle: "demishassabis"
-      name: "Demis Hassabis"
-      relevance_hint: "AI research, DeepMind/Google"
-
-    - handle: "sama"
-      name: "Sam Altman"
-      relevance_hint: "AI industry, OpenAI, regulation views"
-
-    - handle: "BenediktEvans"
-      name: "Benedict Evans"
-      relevance_hint: "Tech industry analysis, AI impact on business models"
-
-    # --- Economics & finance ---
-    - handle: "Schuldensuehner"
-      name: "Holger Zschaepitz"
-      relevance_hint: "European financial markets, macro economics"
-
-    - handle: "Isabel_Schnabel"
-      name: "Isabel Schnabel"
-      relevance_hint: "ECB Executive Board, monetary policy, digital finance"
-
-    # --- Dutch ecosystem ---
-    - handle: "nlaic"
-      name: "NL AI Coalition"
-      relevance_hint: "Dutch AI ecosystem, policy, public-private collaboration"
-
-    # --- International AI research & labs ---
-    - handle: "blaiseaguera"
-      name: "Blaise Agüera y Arcas"
-      relevance_hint: "AI research, Google DeepMind, societal impact of AI"
-
-    - handle: "arthurmensch"
-      name: "Arthur Mensch"
-      relevance_hint: "CEO Mistral AI, open-source LLMs, European AI"
-
-    - handle: "Thom_Wolf"
-      name: "Thomas Wolf"
-      relevance_hint: "Co-founder & CSO Hugging Face, open-source AI"
-
-    - handle: "TiRune"
-      name: "Tijmen Blankevoort"
-      relevance_hint: "AI Research Scientist at Meta, quantization, efficient AI"
-
-    - handle: "douwekiela"
-      name: "Douwe Kiela"
-      relevance_hint: "CEO Contextual AI, RAG, enterprise AI"
-
-    - handle: "dpkingma"
-      name: "Durk Kingma"
-      relevance_hint: "AI researcher at Anthropic, VAEs, generative models"
-
-    # --- Dutch AI founders & startups ---
-    - handle: "bobvanluijt"
-      name: "Bob van Luijt"
-      relevance_hint: "CEO Weaviate, vector databases, AI-native applications"
-
-    - handle: "salar"
-      name: "Salar al Khafaji"
-      relevance_hint: "CEO Monumental, construction robotics, Dutch deep tech"
-
-    - handle: "RogierFischer"
-      name: "Rogier Fischer"
-      relevance_hint: "Co-founder & CEO Hadrian, cybersecurity"
-
-    - handle: "jelleprins"
-      name: "Jelle Prins"
-      relevance_hint: "Co-founder Cradle, AI-driven protein design, biotech"
-
-    - handle: "jakubzavrel"
-      name: "Jakub Zavrel"
-      relevance_hint: "CEO Zeta Alpha, AI research discovery, NLP"
-
-    # --- Dutch academia ---
-    - handle: "wellingmax"
-      name: "Max Welling"
-      relevance_hint: "Co-founder CuspAI, AI for materials science, UvA professor"
-
-    - handle: "marcelge"
-      name: "Marcel van Gerven"
-      relevance_hint: "Professor Donders Institute, computational neuroscience, AI"
-
-    - handle: "cgmsnoek"
-      name: "Cees Snoek"
-      relevance_hint: "Scientific Director Amsterdam AI, computer vision, UvA"
-
-    - handle: "JZuidema"
-      name: "Jelle Zuidema"
-      relevance_hint: "Professor UvA ILLC, NLP, explainable AI, cognitive modelling"
-
-    # --- Dutch policy, think tanks & investment ---
-    - handle: "annevveenstra"
-      name: "Anne Fleur van Veenstra"
-      relevance_hint: "Director of Science TNO, AI policy, digital government"
-
-    - handle: "MaaikeOh"
-      name: "Maaike Okano-Heijmans"
-      relevance_hint: "Senior researcher Clingendael, geopolitics of tech, EU-Asia"
-
-    - handle: "twehmeier"
-      name: "Tom Wehmeier"
-      relevance_hint: "Partner Atomico, State of European Tech, VC intelligence"
-
-    # --- Global AI voices ---
-    - handle: "DavidTimis"
-      name: "David Timis"
-      relevance_hint: "AI governance, future of work, global AI risk awareness"
-
-# =============================================================================
-# OFFICIAL PUBLICATIONS & DATA SOURCES
-# These are checked for new documents/reports (web scraping, not RSS).
-# =============================================================================
-
+    - handle: alexstubb
+      name: Alexander Stubb
+      relevance_hint: EU leadership, AI governance, digital policy
+    - handle: Vestager
+      name: Margrethe Vestager
+      relevance_hint: EU digital/competition commissioner, AI regulation architect
+    - handle: ThierryBreton
+      name: Thierry Breton
+      relevance_hint: Former EU digital commissioner, EU AI Act, industrial policy
+    - handle: ylecun
+      name: Yann LeCun
+      relevance_hint: AI research, Meta, open-source AI debates
+    - handle: AndrewYNg
+      name: Andrew Ng
+      relevance_hint: AI industry, education, startup ecosystem
+    - handle: GaryMarcus
+      name: Gary Marcus
+      relevance_hint: AI critique, policy, safety
+    - handle: demishassabis
+      name: Demis Hassabis
+      relevance_hint: AI research, DeepMind/Google
+    - handle: sama
+      name: Sam Altman
+      relevance_hint: AI industry, OpenAI, regulation views
+    - handle: BenediktEvans
+      name: Benedict Evans
+      relevance_hint: Tech industry analysis, AI impact on business models
+    - handle: Schuldensuehner
+      name: Holger Zschaepitz
+      relevance_hint: European financial markets, macro economics
+    - handle: Isabel_Schnabel
+      name: Isabel Schnabel
+      relevance_hint: ECB Executive Board, monetary policy, digital finance
+    - handle: nlaic
+      name: NL AI Coalition
+      relevance_hint: Dutch AI ecosystem, policy, public-private collaboration
+    - handle: blaiseaguera
+      name: Blaise Agüera y Arcas
+      relevance_hint: AI research, Google DeepMind, societal impact of AI
+    - handle: arthurmensch
+      name: Arthur Mensch
+      relevance_hint: CEO Mistral AI, open-source LLMs, European AI
+    - handle: Thom_Wolf
+      name: Thomas Wolf
+      relevance_hint: Co-founder & CSO Hugging Face, open-source AI
+    - handle: TiRune
+      name: Tijmen Blankevoort
+      relevance_hint: AI Research Scientist at Meta, quantization, efficient AI
+    - handle: douwekiela
+      name: Douwe Kiela
+      relevance_hint: CEO Contextual AI, RAG, enterprise AI
+    - handle: dpkingma
+      name: Durk Kingma
+      relevance_hint: AI researcher at Anthropic, VAEs, generative models
+    - handle: bobvanluijt
+      name: Bob van Luijt
+      relevance_hint: CEO Weaviate, vector databases, AI-native applications
+    - handle: salar
+      name: Salar al Khafaji
+      relevance_hint: CEO Monumental, construction robotics, Dutch deep tech
+    - handle: RogierFischer
+      name: Rogier Fischer
+      relevance_hint: Co-founder & CEO Hadrian, cybersecurity
+    - handle: jelleprins
+      name: Jelle Prins
+      relevance_hint: Co-founder Cradle, AI-driven protein design, biotech
+    - handle: jakubzavrel
+      name: Jakub Zavrel
+      relevance_hint: CEO Zeta Alpha, AI research discovery, NLP
+    - handle: wellingmax
+      name: Max Welling
+      relevance_hint: Co-founder CuspAI, AI for materials science, UvA professor
+    - handle: marcelge
+      name: Marcel van Gerven
+      relevance_hint: Professor Donders Institute, computational neuroscience, AI
+    - handle: cgmsnoek
+      name: Cees Snoek
+      relevance_hint: Scientific Director Amsterdam AI, computer vision, UvA
+    - handle: JZuidema
+      name: Jelle Zuidema
+      relevance_hint: Professor UvA ILLC, NLP, explainable AI, cognitive modelling
+    - handle: annevveenstra
+      name: Anne Fleur van Veenstra
+      relevance_hint: Director of Science TNO, AI policy, digital government
+    - handle: MaaikeOh
+      name: Maaike Okano-Heijmans
+      relevance_hint: Senior researcher Clingendael, geopolitics of tech, EU-Asia
+    - handle: twehmeier
+      name: Tom Wehmeier
+      relevance_hint: Partner Atomico, State of European Tech, VC intelligence
+    - handle: DavidTimis
+      name: David Timis
+      relevance_hint: AI governance, future of work, global AI risk awareness
 web_sources:
-  - name: "CBS Statline - AI / Digitalisering"
-    url: "https://www.cbs.nl/nl-nl/zoeken/?q=kunstmatige+intelligentie"
-    category: "official_nl_data"
-    language: "nl"
-    type: "search_page"
-
-  - name: "Rijksoverheid - AI beleid"
-    url: "https://www.rijksoverheid.nl/onderwerpen/digitalisering/artifici%C3%ABle-intelligentie-ai"
-    category: "official_nl"
-    language: "nl"
-    type: "topic_page"
-
-  - name: "AIAct.eu - Updates"
-    url: "https://artificialintelligenceact.eu/feed/"
-    category: "eu_policy"
-    language: "en"
-    type: "rss"
-
-# =============================================================================
-# SERENDIPITY SOURCES
-# A curated pool of credible but lower-frequency sources.
-# SERENDIPITY_N (default: 5) are randomly sampled each run, giving the briefing
-# variety and a chance to surface institutional reports or analysis that wouldn't
-# appear in the core feeds. Quality over quantity — only add sources that Stefan
-# would trust if they surfaced a Tier 1 item.
-# =============================================================================
-
+  - name: CBS Statline - AI / Digitalisering
+    url: https://www.cbs.nl/nl-nl/zoeken/?q=kunstmatige+intelligentie
+    category: official_nl_data
+    language: nl
+    type: search_page
+  - name: Rijksoverheid - AI beleid
+    url: https://www.rijksoverheid.nl/onderwerpen/digitalisering/artifici%C3%ABle-intelligentie-ai
+    category: official_nl
+    language: nl
+    type: topic_page
+  - name: AIAct.eu - Updates
+    url: https://artificialintelligenceact.eu/feed/
+    category: eu_policy
+    language: en
+    type: rss
 serendipity_sources:
-
-  # --- AI industry (quality signal, higher noise than core) ---
-  - name: "VentureBeat AI"
-    url: "https://venturebeat.com/category/ai/feed/"
-    category: "ai_industry"
-    language: "en"
-
-  - name: "The Decoder"
-    url: "https://the-decoder.com/feed/"
-    category: "ai_industry"
-    language: "en"
-
-  # --- Think tanks & policy research ---
-  - name: "McKinsey Insights"
-    url: "https://www.mckinsey.com/insights/rss.asp"
-    category: "ai_research"
-    language: "en"
-
-  # WEF — no working AI-section RSS feed found (403 on known URLs). Re-add if confirmed.
-  # - name: "WEF - Artificial Intelligence"
-  #   url: ""
-  #   category: "ai_policy"
-  #   language: "en"
-
-  - name: "Brookings - AI Research"
-    url: "https://www.brookings.edu/topic/artificial-intelligence/feed/"
-    category: "ai_policy"
-    language: "en"
-
-  - name: "Oxford Internet Institute"
-    url: "https://www.oii.ox.ac.uk/feed/"
-    category: "ai_research"
-    language: "en"
-
-  # Alan Turing Institute — RSS returns 403 Forbidden. Blocked by their server config.
-  # - name: "Alan Turing Institute"
-  #   url: "https://www.turing.ac.uk/news/rss.xml"
-  #   category: "ai_research"
-  #   language: "en"
-
-  - name: "Ada Lovelace Institute"
-    url: "https://www.adalovelaceinstitute.org/feed/"
-    category: "ai_policy"
-    language: "en"
-
-  # NESTA — no public RSS feed found; newsletter-only.
-  # - name: "NESTA Innovation"
-  #   url: ""
-  #   category: "ai_policy"
-  #   language: "en"
-
-  # Stiftung Neue Verantwortung rebranded to interface-eu.org — no working RSS found.
-  # - name: "Interface (formerly Stiftung Neue Verantwortung)"
-  #   url: ""
-  #   category: "ai_policy"
-  #   language: "en"
-
-  # --- EU institutions ---
-  # EU Innovation Council — no working RSS endpoint found.
-  # - name: "EU Innovation Council"
-  #   url: ""
-  #   category: "official_eu"
-  #   language: "en"
-
-  # Politico EU RSS domain (rss.politico.eu) no longer resolves — re-add if it returns.
-  # - name: "Politico EU - Tech"
-  #   url: "https://rss.politico.eu/tech.xml"
-  #   category: "eu_policy"
-  #   language: "en"
-
-  # --- International news wires ---
-  # Reuters removed their RSS feeds in 2020. No public feed available.
-  # - name: "Reuters Technology"
-  #   url: ""
-  #   category: "news_wire"
-  #   language: "en"
-
-  # --- Digital rights / governance ---
-  - name: "EFF Deeplinks"
-    url: "https://www.eff.org/rss/updates.xml"
-    category: "digital_rights"
-    language: "en"
-
-  # --- AI policy think tanks ---
-  - name: "Centre for the Governance of AI (GovAI)"
-    url: "https://www.governance.ai/post/rss.xml"
-    category: "ai_policy"
-    language: "en"
-
-  - name: "AI Now Institute"
-    url: "https://ainowinstitute.org/feed"
-    category: "ai_policy"
-    language: "en"
-
-  - name: "Future of Life Institute"
-    url: "https://futureoflife.org/feed/"
-    category: "ai_policy"
-    language: "en"
-
-  - name: "CSET (Center for Security and Emerging Technology)"
-    url: "https://cset.georgetown.edu/feed/"
-    category: "ai_policy"
-    language: "en"
-
-  # Bertelsmann Stiftung — no working digital-filtered RSS found; newsletter-only.
-  # - name: "Bertelsmann Stiftung"
-  #   url: ""
-  #   category: "ai_policy"
-  #   language: "en"
-
-  # --- Startup & investment data ---
-  - name: "Dealroom - Blog"
-    url: "https://dealroom.co/blog/feed"
-    category: "eu_startup_vc"
-    language: "en"
+  - name: VentureBeat AI
+    url: https://venturebeat.com/category/ai/feed/
+    category: ai_industry
+    language: en
+  - name: The Decoder
+    url: https://the-decoder.com/feed/
+    category: ai_industry
+    language: en
+  - name: McKinsey Insights
+    url: https://www.mckinsey.com/insights/rss.asp
+    category: ai_research
+    language: en
+  - name: Brookings - AI Research
+    url: https://www.brookings.edu/topic/artificial-intelligence/feed/
+    category: ai_policy
+    language: en
+  - name: Oxford Internet Institute
+    url: https://www.oii.ox.ac.uk/feed/
+    category: ai_research
+    language: en
+  - name: Ada Lovelace Institute
+    url: https://www.adalovelaceinstitute.org/feed/
+    category: ai_policy
+    language: en
+  - name: EFF Deeplinks
+    url: https://www.eff.org/rss/updates.xml
+    category: digital_rights
+    language: en
+  - name: Centre for the Governance of AI (GovAI)
+    url: https://www.governance.ai/post/rss.xml
+    category: ai_policy
+    language: en
+  - name: AI Now Institute
+    url: https://ainowinstitute.org/feed
+    category: ai_policy
+    language: en
+  - name: Future of Life Institute
+    url: https://futureoflife.org/feed/
+    category: ai_policy
+    language: en
+  - name: CSET (Center for Security and Emerging Technology)
+    url: https://cset.georgetown.edu/feed/
+    category: ai_policy
+    language: en
+  - name: Dealroom - Blog
+    url: https://dealroom.co/blog/feed
+    category: eu_startup_vc
+    language: en

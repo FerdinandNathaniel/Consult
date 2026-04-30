@@ -326,32 +326,19 @@
       text-overflow: ellipsis;
     }
 
-    .badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 10px;
-      text-transform: uppercase;
-      letter-spacing: .3px;
-    }
-    .badge-good { background: var(--good-bg); color: var(--good); }
-    .badge-bad  { background: var(--bad-bg);  color: var(--bad);  }
-
-    .flag-btn {
+    .delete-btn {
       background: none;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      width: 32px;
-      height: 28px;
-      font-size: 14px;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px 6px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border-radius: var(--radius);
+      opacity: 0.5;
+      flex-shrink: 0;
     }
-    .flag-btn:hover { background: var(--bg); }
-    .flag-btn.active-good { background: var(--good-bg); border-color: var(--good); }
-    .flag-btn.active-bad  { background: var(--bad-bg);  border-color: var(--bad);  }
+    .delete-btn:hover { color: var(--bad); opacity: 1; background: var(--bad-bg); }
 
     .add-source-panel {
       padding: 16px;
@@ -495,10 +482,10 @@
 
 const OWNER               = 'FerdinandNathaniel';
 const REPO                = 'Consult';
-const DAILY_WORKFLOW_FILE = 'daily_briefing.yml';
-const WEEKLY_WORKFLOW_FILE= 'weekly_roundup.yml';
+const DAILY_WORKFLOW_FILE      = 'daily_briefing.yml';
+const WEEKLY_WORKFLOW_FILE     = 'weekly_roundup.yml';
+const ADD_SOURCE_WORKFLOW_FILE = 'add-source.yml';
 const SOURCES_PATH        = 'config/sources.yaml';
-const FEEDBACK_PATH       = 'data/source_feedback.json';
 const BRIEFINGS_DIR       = 'briefings';
 const ROUNDUPS_DIR        = 'roundups';
 const DEFAULT_BRANCH      = 'main';
@@ -614,11 +601,11 @@ let _dailyPollStartedAt = null;
 let _weeklyDispatchedAt = null;
 let _weeklyPollTimer = null;
 let _weeklyPollStartedAt = null;
+let _sourceDiscoveryDispatchedAt = null;
+let _sourceDiscoveryPollTimer = null;
 
 const state = {
   pat: localStorage.getItem('gh_pat') || '',
-  feedback: {},
-  feedbackSha: null,
   sources: [],
   socialSources: [],
 };
@@ -746,9 +733,7 @@ function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   initModelSelect();
-  loadFeedback().then(async () => {
-    await Promise.all([loadBriefings(), loadRoundups()]);
-  });
+  Promise.all([loadBriefings(), loadRoundups()]);
   checkActiveRun();
 }
 
@@ -1180,141 +1165,132 @@ function renderSocialSources() {
 
 function renderSources() {
   const el = document.getElementById('sources-list');
-  const fb = state.feedback;
 
   el.innerHTML = `
     <div class="card-header">
       <span>Media & organisations</span>
       <span class="count">${state.sources.length} sources</span>
     </div>
-    ${state.sources.map(s => {
-      const rating = fb[s.url]?.rating;
-      return `
-        <div class="source-row">
-          <div class="source-info">
-            <div class="source-name">${esc(s.name)}</div>
-            <div class="source-url">${esc(s.url)}</div>
-          </div>
-          ${rating ? `<span class="badge badge-${rating}">${rating}</span>` : ''}
-          <button class="flag-btn ${rating === 'good' ? 'active-good' : ''}"
-                  data-url="${esc(s.url)}" data-name="${esc(s.name)}" data-rating="good"
-                  title="Good source">👍</button>
-          <button class="flag-btn ${rating === 'bad' ? 'active-bad' : ''}"
-                  data-url="${esc(s.url)}" data-name="${esc(s.name)}" data-rating="bad"
-                  title="Poor source">👎</button>
+    ${state.sources.map(s => `
+      <div class="source-row">
+        <div class="source-info">
+          <div class="source-name">${esc(s.name)}</div>
+          <div class="source-url">${esc(s.url)}</div>
         </div>
-      `;
-    }).join('')}
+        <button class="delete-btn" data-url="${esc(s.url)}" data-name="${esc(s.name)}" title="Remove source">&times;</button>
+      </div>
+    `).join('')}
     <div class="add-source-panel">
       <div class="label">Add a source</div>
       <div class="row">
-        <input type="text" id="new-name" placeholder="Source name" />
-        <input type="url"  id="new-url"  placeholder="RSS feed URL" />
+        <input type="url" id="new-url" placeholder="Website or RSS feed URL" style="flex:1" />
         <button class="btn btn-primary" id="add-btn" onclick="addSource()">Add</button>
       </div>
-      <p class="hint">Commits directly to <code>config/sources.yaml</code> on main — active on the next run.</p>
+      <p id="add-source-status" class="hint"></p>
     </div>
   `;
 
   el.addEventListener('click', e => {
-    const btn = e.target.closest('.flag-btn');
-    if (btn) flagSource(btn.dataset.url, btn.dataset.name, btn.dataset.rating);
+    const btn = e.target.closest('.delete-btn');
+    if (btn) removeSource(btn.dataset.url, btn.dataset.name);
   });
 }
 
 async function addSource() {
-  const name = document.getElementById('new-name').value.trim();
-  const url  = document.getElementById('new-url').value.trim();
-  if (!name || !url) { toast('Name and URL are required.', true); return; }
+  const url = document.getElementById('new-url').value.trim();
+  if (!url) { toast('Enter a URL.', true); return; }
 
   const btn = document.getElementById('add-btn');
+  const statusEl = document.getElementById('add-source-status');
   btn.disabled = true;
-  btn.textContent = 'Saving…';
+  btn.textContent = 'Searching…';
+  statusEl.textContent = 'Looking for an RSS feed — this takes about a minute…';
+
+  try {
+    const before = new Date();
+    before.setSeconds(before.getSeconds() - 10);
+    _sourceDiscoveryDispatchedAt = before.toISOString();
+
+    const r = await ghFetch(`actions/workflows/${ADD_SOURCE_WORKFLOW_FILE}/dispatches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: 'main', inputs: { website_url: url } }),
+    });
+    if (r.status !== 204) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.message || `HTTP ${r.status}`);
+    }
+
+    _sourceDiscoveryPollTimer = setTimeout(pollSourceDiscovery, 10000);
+  } catch (e) {
+    toast(`Failed to start: ${e.message}`, true);
+    btn.disabled = false;
+    btn.textContent = 'Add';
+    statusEl.textContent = '';
+  }
+}
+
+async function pollSourceDiscovery() {
+  try {
+    const data = await ghGet(`actions/workflows/${ADD_SOURCE_WORKFLOW_FILE}/runs?per_page=10`);
+    const run = data.workflow_runs?.find(r => r.created_at >= _sourceDiscoveryDispatchedAt);
+
+    if (!run || run.status !== 'completed') {
+      _sourceDiscoveryPollTimer = setTimeout(pollSourceDiscovery, 12000);
+      return;
+    }
+
+    const btn = document.getElementById('add-btn');
+    const statusEl = document.getElementById('add-source-status');
+    btn.disabled = false;
+    btn.textContent = 'Add';
+    _sourceDiscoveryPollTimer = null;
+
+    if (run.conclusion === 'success') {
+      document.getElementById('new-url').value = '';
+      statusEl.textContent = 'Source added — active on the next run.';
+      loadSources();
+    } else {
+      statusEl.textContent = 'Could not find an RSS feed for this URL. Try a more specific URL, or check the Actions tab for details.';
+    }
+  } catch {
+    _sourceDiscoveryPollTimer = setTimeout(pollSourceDiscovery, 15000);
+  }
+}
+
+async function removeSource(url, name) {
+  if (!confirm(`Remove "${name}" from sources?`)) return;
 
   try {
     const fileData = await ghGet(`contents/${SOURCES_PATH}`);
     const parsed   = jsyaml.load(b64decode(fileData.content));
-    parsed.rss_feeds = [...(parsed.rss_feeds || []), { name, url }];
+    const before   = (parsed.rss_feeds || []).length;
+    parsed.rss_feeds = (parsed.rss_feeds || []).filter(s => s.url !== url);
+
+    if (parsed.rss_feeds.length === before) {
+      toast('Source not found in config.', true);
+      return;
+    }
 
     const r = await ghFetch(`contents/${SOURCES_PATH}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: `sources: add ${name}`,
+        message: `sources: remove ${name}`,
         content: b64encode(jsyaml.dump(parsed, { indent: 2, lineWidth: 120 })),
         sha: fileData.sha,
         branch: 'main',
       }),
     });
-
     if (!r.ok) {
       const body = await r.json().catch(() => ({}));
       throw new Error(body.message || `HTTP ${r.status}`);
     }
 
-    toast(`"${name}" added — active on the next run.`);
-    document.getElementById('new-name').value = '';
-    document.getElementById('new-url').value  = '';
-    state.sources = [];
+    toast(`"${name}" removed.`);
     loadSources();
   } catch (e) {
-    toast(`Failed to add source: ${e.message}`, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Add';
-  }
-}
-
-// ── Feedback ─────────────────────────────────────────────────────────────────
-
-async function loadFeedback() {
-  try {
-    const data = await ghGet(`contents/${FEEDBACK_PATH}`);
-    state.feedback    = JSON.parse(b64decode(data.content));
-    state.feedbackSha = data.sha;
-  } catch {
-    state.feedback    = {};
-    state.feedbackSha = null;
-  }
-}
-
-async function flagSource(url, name, rating) {
-  const current   = state.feedback[url]?.rating;
-  const newRating = current === rating ? null : rating;
-
-  const updated = { ...state.feedback };
-  if (newRating) {
-    updated[url] = { name, rating: newRating, updated: new Date().toISOString().slice(0, 10) };
-  } else {
-    delete updated[url];
-  }
-
-  const body = {
-    message: newRating
-      ? `feedback: mark "${name}" as ${newRating}`
-      : `feedback: clear rating for "${name}"`,
-    content: b64encode(JSON.stringify(updated, null, 2) + '\n'),
-    branch: 'main',
-  };
-  if (state.feedbackSha) body.sha = state.feedbackSha;
-
-  try {
-    const r = await ghFetch(`contents/${FEEDBACK_PATH}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) {
-      const rb = await r.json().catch(() => ({}));
-      throw new Error(rb.message || `HTTP ${r.status}`);
-    }
-    const result      = await r.json();
-    state.feedback    = updated;
-    state.feedbackSha = result.content.sha;
-    renderSources();
-    toast(newRating ? `Marked as ${newRating}.` : 'Rating removed.');
-  } catch (e) {
-    toast(`Failed to save: ${e.message}`, true);
+    toast(`Failed to remove: ${e.message}`, true);
   }
 }
 

@@ -87,6 +87,8 @@ rss_feeds:
     url: https://aisnakeoil.substack.com/feed
     category: ai_newsletter
     language: en
+  - name: The Batch - DeepLearning.ai (Andrew Ng)
+    url: https://www.deeplearning.ai/the-batch/feed.xml
 social:
   rsshub_instance: https://rsshub.app
   twitter_accounts:

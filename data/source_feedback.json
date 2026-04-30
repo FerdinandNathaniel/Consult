@@ -8,5 +8,10 @@
     "name": "AI Snake Oil (Narayanan & Kapoor)",
     "rating": "bad",
     "updated": "2026-04-24"
+  },
+  "https://www.europarl.europa.eu/rss/doc/top-stories/en.xml": {
+    "name": "European Parliament - News",
+    "rating": "good",
+    "updated": "2026-04-30"
   }
 }

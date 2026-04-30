@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       website_url:
-        description: 'Website or RSS feed URL to add'
+        description: 'Website or RSS feed URL(s) to add — separate multiple with commas'
         required: true
 
 jobs:

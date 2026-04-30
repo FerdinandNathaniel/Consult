@@ -1204,10 +1204,11 @@ function renderSources() {
       </div>
     `).join('')}
     <div class="add-source-panel">
-      <div class="label">Add a source</div>
-      <div class="row">
-        <input type="url" id="new-url" placeholder="Website URL — RSS feed will be found automatically" style="flex:1" />
-        <button class="btn btn-primary" id="add-btn" onclick="addSource()">Add</button>
+      <div class="label">Find &amp; add a source</div>
+      <div id="discovery-rows"></div>
+      <div class="row" style="margin-top:8px">
+        <button class="add-row-btn" onclick="addDiscoveryRow()">+ Add row</button>
+        <button class="btn btn-primary" id="add-btn" onclick="addSource()">Find feed</button>
       </div>
       <p id="add-source-status" class="hint"></p>
       <div>
@@ -1227,17 +1228,52 @@ function renderSources() {
     const btn = e.target.closest('.delete-btn');
     if (btn) removeSource(btn.dataset.url, btn.dataset.name);
   });
+
+  // Seed discovery with one empty row
+  addDiscoveryRow();
+}
+
+// ── Discovery rows ────────────────────────────────────────────────────────────
+
+function addDiscoveryRow() {
+  const container = document.getElementById('discovery-rows');
+  const div = document.createElement('div');
+  div.className = 'discovery-row direct-row row';
+  div.innerHTML = `
+    <input type="url" class="discovery-url" placeholder="Website URL — RSS feed will be found automatically" style="flex:1" />
+    <button class="remove-row-btn" onclick="removeDiscoveryRow(this)" title="Remove">&times;</button>
+  `;
+  div.querySelector('input').addEventListener('input', _syncDiscoveryRows);
+  container.appendChild(div);
+  _syncDiscoveryRows();
+}
+
+function removeDiscoveryRow(btn) {
+  btn.closest('.discovery-row').remove();
+  _syncDiscoveryRows();
+}
+
+function _syncDiscoveryRows() {
+  const rows = document.querySelectorAll('#discovery-rows .discovery-row');
+  rows.forEach(r => {
+    r.querySelector('.remove-row-btn').style.display = rows.length > 1 ? 'inline' : 'none';
+  });
+  const filled = [...rows].filter(r => r.querySelector('.discovery-url').value.trim()).length;
+  const btn = document.getElementById('add-btn');
+  if (btn) btn.textContent = filled > 1 ? `Find ${filled} feeds` : 'Find feed';
 }
 
 async function addSource() {
-  const url = document.getElementById('new-url').value.trim();
-  if (!url) { toast('Enter a URL.', true); return; }
+  const urls = [...document.querySelectorAll('#discovery-rows .discovery-url')]
+    .map(i => i.value.trim()).filter(Boolean);
+  if (!urls.length) { toast('Enter at least one URL.', true); return; }
 
   const btn = document.getElementById('add-btn');
   const statusEl = document.getElementById('add-source-status');
   btn.disabled = true;
   btn.textContent = 'Searching…';
-  statusEl.textContent = 'Looking for an RSS feed — this takes about a minute…';
+  const label = urls.length === 1 ? 'an RSS feed' : `${urls.length} RSS feeds`;
+  statusEl.textContent = `Looking for ${label} — this takes about a minute…`;
 
   try {
     const before = new Date();
@@ -1247,7 +1283,7 @@ async function addSource() {
     const r = await ghFetch(`actions/workflows/${ADD_SOURCE_WORKFLOW_FILE}/dispatches`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref: 'main', inputs: { website_url: url } }),
+      body: JSON.stringify({ ref: 'main', inputs: { website_url: urls.join(',') } }),
     });
     if (r.status !== 204) {
       const body = await r.json().catch(() => ({}));
@@ -1258,7 +1294,7 @@ async function addSource() {
   } catch (e) {
     toast(`Failed to start: ${e.message}`, true);
     btn.disabled = false;
-    btn.textContent = 'Add';
+    _syncDiscoveryRows();
     statusEl.textContent = '';
   }
 }
@@ -1276,15 +1312,16 @@ async function pollSourceDiscovery() {
     const btn = document.getElementById('add-btn');
     const statusEl = document.getElementById('add-source-status');
     btn.disabled = false;
-    btn.textContent = 'Add';
     _sourceDiscoveryPollTimer = null;
 
     if (run.conclusion === 'success') {
-      document.getElementById('new-url').value = '';
-      statusEl.textContent = 'Source added — active on the next run.';
+      document.querySelectorAll('#discovery-rows .discovery-url').forEach(i => i.value = '');
+      _syncDiscoveryRows();
+      statusEl.textContent = 'Source(s) added — active on the next run.';
       loadSources();
     } else {
-      statusEl.textContent = 'Could not find an RSS feed for this URL. Try a more specific URL, or check the Actions tab for details.';
+      btn.textContent = 'Find feed';
+      statusEl.textContent = 'Could not find an RSS feed. Try a more specific URL, or check the Actions tab for details.';
     }
   } catch {
     _sourceDiscoveryPollTimer = setTimeout(pollSourceDiscovery, 15000);

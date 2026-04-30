@@ -13,5 +13,10 @@
     "name": "European Parliament - News",
     "rating": "good",
     "updated": "2026-04-30"
+  },
+  "https://www.euractiv.com/sections/tech/feed": {
+    "name": "Euractiv Technology",
+    "rating": "bad",
+    "updated": "2026-04-30"
   }
 }

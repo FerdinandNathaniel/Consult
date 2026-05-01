@@ -21,7 +21,7 @@ from ..models import Article
 
 logger = logging.getLogger(__name__)
 
-LOOKBACK_HOURS = 25
+LOOKBACK_HOURS = int(os.environ.get("LOOKBACK_HOURS", 25))
 
 
 def _rsshub_url(instance: str, handle: str) -> str:

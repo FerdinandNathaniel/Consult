@@ -3,6 +3,7 @@ name: Daily Briefing
 on:
   schedule:
     # 03:00 UTC = 04:00 CET (winter) / 05:00 CEST (summer)
+    # To change the time, edit the cron expression. Use https://crontab.guru to build your own.
     - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
@@ -35,11 +36,14 @@ jobs:
       - name: Run briefing
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_MODEL: ${{ github.event.inputs.model || vars.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4-6' }}
+          OPENROUTER_MODEL: ${{ github.event.inputs.model || vars.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.6' }}
           RSSHUB_INSTANCE: ${{ secrets.RSSHUB_INSTANCE }}
           OUTPUT_DIR: outputs
-          SERENDIPITY_N: "5"
-          INCLUDE_TIER3: "true"
+          LOOKBACK_HOURS:   ${{ vars.LOOKBACK_HOURS   || '25' }}
+          SERENDIPITY_N:    ${{ vars.SERENDIPITY_N    || '3' }}
+          TIER1_THRESHOLD:  ${{ vars.TIER1_THRESHOLD  || '3' }}
+          MAX_ITERATIONS:   ${{ vars.MAX_ITERATIONS   || '3' }}
+          INCLUDE_TIER3:    ${{ vars.INCLUDE_TIER3    || 'false' }}
         run: python -m src.briefing.run
 
       - name: Commit briefing to repository

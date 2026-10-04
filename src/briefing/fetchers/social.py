@@ -21,7 +21,7 @@ from ..models import Article
 
 logger = logging.getLogger(__name__)
 
-LOOKBACK_HOURS = 25
+LOOKBACK_HOURS = int(os.environ.get("LOOKBACK_HOURS", 25))
 
 
 def _rsshub_url(instance: str, handle: str) -> str:
@@ -47,7 +47,7 @@ def fetch_social_articles(social_config: dict) -> tuple[list[Article], list[str]
         os.environ.get("RSSHUB_INSTANCE")
         or social_config.get("rsshub_instance", "https://rsshub.app")
     )
-    accounts = social_config.get("twitter_accounts", [])
+    accounts = social_config.get("twitter_accounts") or []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
     articles: list[Article] = []
     auth_failed_handles: list[str] = []

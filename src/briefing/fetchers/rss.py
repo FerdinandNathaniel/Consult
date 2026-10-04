@@ -1,6 +1,7 @@
 import feedparser
 import httpx
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
@@ -8,7 +9,7 @@ from ..models import Article
 
 logger = logging.getLogger(__name__)
 
-LOOKBACK_HOURS = 25  # slightly over 24h to avoid missing items near the boundary
+LOOKBACK_HOURS = int(os.environ.get("LOOKBACK_HOURS", 25))
 
 
 def _parse_date(entry) -> datetime | None:

@@ -3,13 +3,14 @@ Daily briefing — main entry point.
 
 Usage:
     python -m src.briefing.run              # normal run
-    python -m src.briefing.run --dry-run    # fetch and format, skip LLM scoring and Drive upload
+    python -m src.briefing.run --dry-run    # fetch and format, skip LLM scoring
 
 Environment variables:
     SERENDIPITY_N       Number of serendipity sources to sample per run (default: 3)
     MAX_ITERATIONS      Max quality-pass iterations if Tier 1 count is low (default: 3)
     TIER1_THRESHOLD     Minimum Tier 1 articles to consider quality sufficient (default: 3)
     INCLUDE_TIER3       Set to 'true' to include Tier 3 (low signal) in output (default: false)
+    LOOKBACK_HOURS      How many hours back to fetch articles (default: 25)
 """
 
 import argparse
@@ -167,22 +168,12 @@ def main(dry_run: bool = False) -> None:
     output_path.write_text(briefing_md, encoding="utf-8")
     logger.info(f"Briefing written to {output_path}")
 
-    # --- Upload to Drive ---
-    # Disabled: service accounts lack personal Drive quota.
-    # Output is stored locally and uploaded as a GitHub Actions artifact.
-    # Re-enable once a Shared Drive is available (requires supportsAllDrives=True in drive.py).
-    # if not dry_run:
-    #     from .drive import upload_to_drive
-    #     url = upload_to_drive(output_path, filename)
-    #     if url:
-    #         logger.info(f"Available in Drive: {url}")
-
     # Print path for CI visibility
     print(str(output_path))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true", help="Skip LLM calls and Drive upload")
+    parser.add_argument("--dry-run", action="store_true", help="Skip LLM calls")
     args = parser.parse_args()
     main(dry_run=args.dry_run)
